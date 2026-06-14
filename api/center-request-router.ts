@@ -239,18 +239,25 @@ export const centerRequestRouter = createRouter({
         .where(eq(centers.slug, input.slug));
       if (!center) throw new TRPCError({ code: "NOT_FOUND", message: "Center not found" });
 
-      const [request] = await db
-        .select()
-        .from(centerRequests)
-        .where(eq(centerRequests.id, center.requestId!));
-      if (!request || request.status !== "approved") throw new TRPCError({ code: "NOT_FOUND" });
+      let emails: { id: number; email: string }[] = [];
+      let locations: { id: number; country: string; city: string; address: string }[] = [];
+      let phones: { id: number; countryCode: string; number: string }[] = [];
+      let albums: { id: number; imageUrl: string }[] = [];
 
-      const [emails, locations, phones, albums] = await Promise.all([
-        db.select().from(centerRequestEmails).where(eq(centerRequestEmails.requestId, request.id)),
-        db.select().from(centerRequestLocations).where(eq(centerRequestLocations.requestId, request.id)),
-        db.select().from(centerRequestPhones).where(eq(centerRequestPhones.requestId, request.id)),
-        db.select().from(centerRequestAlbums).where(eq(centerRequestAlbums.requestId, request.id)),
-      ]);
+      if (center.requestId) {
+        const [request] = await db
+          .select()
+          .from(centerRequests)
+          .where(eq(centerRequests.id, center.requestId));
+        if (request && request.status === "approved") {
+          [emails, locations, phones, albums] = await Promise.all([
+            db.select().from(centerRequestEmails).where(eq(centerRequestEmails.requestId, request.id)),
+            db.select().from(centerRequestLocations).where(eq(centerRequestLocations.requestId, request.id)),
+            db.select().from(centerRequestPhones).where(eq(centerRequestPhones.requestId, request.id)),
+            db.select().from(centerRequestAlbums).where(eq(centerRequestAlbums.requestId, request.id)),
+          ]);
+        }
+      }
 
       return {
         id: center.id,
