@@ -1,0 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 33% 94%;
+    --foreground: 160 25% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 160 25% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 160 25% 14%;
+    --primary: 168 20% 32%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 20% 64%;
+    --secondary-foreground: 168 20% 32%;
+    --muted: 40 20% 94%;
+    --muted-foreground: 160 10% 55%;
+    --accent: 40 30% 90%;
+    --accent-foreground: 168 20% 32%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 40 20% 85%;
+    --input: 40 20% 85%;
+    --ring: 168 20% 32%;
+    --radius: 0.625rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 160 25% 14%;
+    --sidebar-primary: 168 20% 32%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 20% 94%;
+    --sidebar-accent-foreground: 160 25% 14%;
+    --sidebar-border: 40 20% 85%;
+    --sidebar-ring: 168 20% 32%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer utilities {
+  .clay-card {
+    @apply rounded-3xl bg-white;
+    box-shadow: 0 4px 24px rgba(0, 105, 92, 0.08), 0 1px 4px rgba(0, 105, 92, 0.04);
+  }
+  .clay-card-hover {
+    @apply transition-all duration-300;
+  }
+  .clay-card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 32px rgba(0, 105, 92, 0.12), 0 2px 8px rgba(0, 105, 92, 0.06);
+  }
+  .pill-button {
+    @apply rounded-full px-6 py-2.5 font-semibold text-sm transition-all duration-200;
+  }
+  .pill-button-primary {
+    @apply pill-button bg-[#445E5D] text-white;
+    box-shadow: 0 2px 8px rgba(68, 94, 93, 0.25);
+  }
+  .pill-button-primary:hover {
+    @apply bg-[#364E4D];
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 4px 16px rgba(68, 94, 93, 0.3);
+  }
+  .pill-button-secondary {
+    @apply pill-button bg-white border border-[#2D423D]/25 text-[#2D423D];
+  }
+  .pill-button-secondary:hover {
+    @apply bg-white/90 border-[#2D423D]/50;
+  }
+  .section-reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .section-reveal.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

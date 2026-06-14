@@ -1,0 +1,55 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1780842689217,
+      "tag": "0000_neat_hitman",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1780843304120,
+      "tag": "0001_messy_doctor_spectrum",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1780854171220,
+      "tag": "0002_optimal_clint_barton",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1780855010641,
+      "tag": "0003_conscious_thunderbolts",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1780856937817,
+      "tag": "0004_volatile_roughhouse",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1780857326732,
+      "tag": "0005_heavy_vermin",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1781286867685,
+      "tag": "0006_kimi_to_email_auth",
+      "breakpoints": true
+    }
+  ]
+}
