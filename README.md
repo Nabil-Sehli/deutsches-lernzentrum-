@@ -1,6 +1,17 @@
 # Deutsches Lernzentrum (German Learning Center)
 
-A full-stack platform for managing German language learning centers. Teachers can submit center creation requests, and admins can approve or reject them through a built-in admin portal.
+A full-stack platform for German language learning. Teachers can manage courses and quizzes, students can track progress across CEFR levels (A1–C1), and center operators can submit requests for new learning centers through an admin approval workflow.
+
+## Features
+
+- **Interactive Quizzes & Assessments** — Auto-graded quizzes per lesson with score tracking and retake support
+- **Multi-Level Curriculum** — Structured lessons across A1, A2, B1, B2, C1 levels
+- **Progress Analytics** — Dashboard with quiz scores, completion rates, and learning history
+- **Center Request Workflow** — Submit new learning center requests; admins approve or reject via a dedicated portal
+- **Role-Based Access** — Student, teacher, and admin roles with guarded routes
+- **i18n Multi-Language** — Full German/English support via i18next
+- **3D Interactive Globe** — Visual homepage element built with Three.js / React Three Fiber
+- **Responsive UI** — shadcn/ui components with Tailwind CSS
 
 ## Stack
 
@@ -12,20 +23,35 @@ A full-stack platform for managing German language learning centers. Teachers ca
 
 ## Getting Started
 
+### Install dependencies
+
 ```bash
-# Install dependencies
 npm install
+```
 
-# Set up environment
-cp .env.example .env  # configure your MySQL connection
+### Configure environment
 
-# Push database schema
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your MySQL connection string (default: `mysql://root:root@localhost:3306/german_learning`).
+
+### Push database schema
+
+```bash
 npm run db:push
+```
 
-# Seed admin user
+### Seed admin user
+
+```bash
 npm run db:seed
+```
 
-# Start dev server
+### Start dev server
+
+```bash
 npm run dev
 ```
 
@@ -65,3 +91,7 @@ npm run dev
 ├── public/
 └── scripts/
 ```
+
+## Legal & Compliance
+
+Terms of Service and Privacy Policy are available as in-app dialogs via the footer on every page, with full German and English translations.
