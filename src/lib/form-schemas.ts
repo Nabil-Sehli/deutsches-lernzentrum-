@@ -77,6 +77,7 @@ export const centerRequestSchema = z.object({
   centerName: z.string().min(1, "Center name is required").max(255),
   centerBio: z.string().optional(),
   logo: z.string().optional().nullable(),
+  slug: z.string().min(1, "URL slug is required").max(255).regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens"),
   emails: z.array(emailEntry).min(1, "At least one email is required"),
   locations: z.array(locationEntry).min(1, "At least one location is required"),
   phones: z.array(phoneEntry).min(1, "At least one phone number is required"),

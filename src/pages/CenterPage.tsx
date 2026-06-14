@@ -1,0 +1,206 @@
+import { useState, useEffect, useCallback } from "react";
+import { useParams, Link } from "react-router";
+import { trpc } from "@/providers/trpc";
+import { Building2, Mail, MapPin, Phone, ChevronLeft, ChevronRight } from "lucide-react";
+
+export default function CenterPage() {
+  const { slug } = useParams<{ slug: string }>();
+  const { data, isLoading, error } = trpc.centerRequest.getBySlug.useQuery(
+    { slug: slug! },
+    { enabled: !!slug }
+  );
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#e8f5e9] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-[#00695c] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="min-h-screen bg-[#e8f5e9] flex items-center justify-center px-6">
+        <div className="text-center">
+          <Building2 className="w-16 h-16 text-[#78909c] mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-[#2c3e2d] mb-2">Center Not Found</h1>
+          <p className="text-[#78909c] mb-6">This learning center does not exist or has not been approved yet.</p>
+          <Link to="/" className="inline-flex items-center rounded-full bg-[#00695c] hover:bg-[#004d40] text-white px-6 py-2.5 font-semibold transition-colors">
+            Back to Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#e8f5e9]">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-[#E6DFD3] shadow-sm">
+        <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
+          <Link to="/" className="font-serif text-[#182E21] font-bold text-base tracking-tight">
+            DLZ
+          </Link>
+          <Link to="/" className="text-sm text-[#78909c] hover:text-[#00695c] transition-colors">
+            Back to Home
+          </Link>
+        </div>
+      </header>
+
+      <main className="pt-16">
+        {/* Hero */}
+        <section className="relative bg-gradient-to-br from-[#00695c] to-[#004d40] text-white">
+          <div className="max-w-[1200px] mx-auto px-6 py-16 md:py-24">
+            <div className="flex flex-col md:flex-row items-center gap-8">
+              {data.logo && (
+                <div className="w-28 h-28 md:w-36 md:h-36 rounded-3xl overflow-hidden border-4 border-white/20 shadow-xl shrink-0 bg-white">
+                  <img src={data.logo} alt={data.name} className="w-full h-full object-cover" />
+                </div>
+              )}
+              <div className="text-center md:text-left">
+                <h1 className="text-3xl md:text-5xl font-bold mb-3">{data.name}</h1>
+                {data.description && (
+                  <p className="text-lg text-white/80 max-w-2xl">{data.description}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div className="max-w-[1200px] mx-auto px-6 py-12 space-y-12">
+          {/* Photo Album Slideshow */}
+          {data.albums && data.albums.length > 0 && (
+            <Slideshow images={data.albums.map((a) => a.imageUrl)} centerName={data.name} />
+          )}
+
+          {/* Contact Info */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Emails */}
+            {data.emails && data.emails.length > 0 && (
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#00695c]/8">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-[#00695c]/10 flex items-center justify-center">
+                    <Mail className="w-5 h-5 text-[#00695c]" />
+                  </div>
+                  <h2 className="font-semibold text-[#2c3e2d]">Email</h2>
+                </div>
+                <div className="space-y-2">
+                  {data.emails.map((e) => (
+                    <a
+                      key={e.id}
+                      href={`mailto:${e.email}`}
+                      className="block text-sm text-[#00695c] hover:underline"
+                    >
+                      {e.email}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Locations */}
+            {data.locations && data.locations.length > 0 && (
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#00695c]/8">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-[#00695c]/10 flex items-center justify-center">
+                    <MapPin className="w-5 h-5 text-[#00695c]" />
+                  </div>
+                  <h2 className="font-semibold text-[#2c3e2d]">Locations</h2>
+                </div>
+                <div className="space-y-3">
+                  {data.locations.map((l) => (
+                    <div key={l.id}>
+                      <p className="text-sm font-medium text-[#2c3e2d]">{l.city}, {l.country}</p>
+                      <p className="text-xs text-[#78909c]">{l.address}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Phones */}
+            {data.phones && data.phones.length > 0 && (
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#00695c]/8">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-[#00695c]/10 flex items-center justify-center">
+                    <Phone className="w-5 h-5 text-[#00695c]" />
+                  </div>
+                  <h2 className="font-semibold text-[#2c3e2d]">Phone</h2>
+                </div>
+                <div className="space-y-2">
+                  {data.phones.map((p) => (
+                    <a
+                      key={p.id}
+                      href={`tel:+${p.countryCode}${p.number}`}
+                      className="block text-sm text-[#00695c] hover:underline"
+                    >
+                      +{p.countryCode} {p.number}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+
+      <footer className="border-t border-[#E6DFD3] bg-white/50 py-8">
+        <div className="max-w-[1200px] mx-auto px-6 text-center text-sm text-[#78909c]">
+          &copy; {new Date().getFullYear()} Deutsches Lernzentrum (DLZ)
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+function Slideshow({ images, centerName }: { images: string[]; centerName: string }) {
+  const [current, setCurrent] = useState(0);
+
+  const prev = useCallback(() => setCurrent((i) => (i === 0 ? images.length - 1 : i - 1)), [images.length]);
+  const next = useCallback(() => setCurrent((i) => (i === images.length - 1 ? 0 : i + 1)), [images.length]);
+
+  useEffect(() => {
+    const timer = setInterval(next, 5000);
+    return () => clearInterval(timer);
+  }, [next]);
+
+  if (images.length === 0) return null;
+
+  return (
+    <div className="relative group">
+      <div className="aspect-[21/9] rounded-3xl overflow-hidden shadow-lg bg-[#00695c]/5">
+        <img
+          src={images[current]}
+          alt={`${centerName} photo ${current + 1}`}
+          className="w-full h-full object-cover transition-opacity duration-500"
+        />
+      </div>
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={prev}
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <ChevronLeft className="w-5 h-5 text-[#2c3e2d]" />
+          </button>
+          <button
+            onClick={next}
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <ChevronRight className="w-5 h-5 text-[#2c3e2d]" />
+          </button>
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
+            {images.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrent(i)}
+                className={`w-2 h-2 rounded-full transition-all ${
+                  i === current ? "bg-white w-6" : "bg-white/50"
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

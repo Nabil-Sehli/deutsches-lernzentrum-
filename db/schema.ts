@@ -49,6 +49,7 @@ export const centers = mysqlTable("centers", {
   phone: varchar("phone", { length: 50 }),
   adminId: bigint("adminId", { mode: "number", unsigned: true }).notNull(),
   slug: varchar("slug", { length: 255 }).notNull().unique(),
+  requestId: bigint("requestId", { mode: "number", unsigned: true }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")
     .defaultNow()
@@ -133,6 +134,7 @@ export const centerRequests = mysqlTable("center_requests", {
   centerName: varchar("centerName", { length: 255 }).notNull(),
   centerBio: text("centerBio"),
   logo: varchar("logo", { length: 512 }),
+  slug: varchar("slug", { length: 255 }).notNull().unique(),
   status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
   adminNotes: text("adminNotes"),
   reviewedBy: bigint("reviewedBy", { mode: "number", unsigned: true }),

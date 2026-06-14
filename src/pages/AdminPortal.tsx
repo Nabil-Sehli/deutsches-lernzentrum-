@@ -319,6 +319,17 @@ function HistoryCard({
             {req.reviewedAt && (
               <p className="text-xs text-[#78909c]">Reviewed: {new Date(req.reviewedAt).toLocaleString()}</p>
             )}
+            {req.status === "approved" && req.slug && (
+              <a
+                href={`/c/${req.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-[#00695c] hover:underline font-medium"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                View Center Page
+              </a>
+            )}
           </div>
         )}
       </CardContent>

@@ -285,6 +285,7 @@ export default function CenterRequestForm({
       centerName: "",
       centerBio: "",
       logo: null,
+      slug: "",
       emails: [{ email: "" }],
       locations: [{ country: "", city: "", address: "" }],
       phones: [{ countryCode: "49", number: "" }],
@@ -397,6 +398,9 @@ export default function CenterRequestForm({
               Thank you for your center registration request. Our team will review
               your application and get back to you within 24&ndash;48 hours.
             </DialogDescription>
+            <p className="text-xs text-[#78909c]">
+              Your page will be at: /c/{watch("slug")}
+            </p>
             <Button
               onClick={() => { setSubmitted(false); onOpenChange(false); form.reset(); }}
               className="rounded-full bg-[#00695c] hover:bg-[#004d40] font-semibold mt-2"
@@ -479,6 +483,29 @@ export default function CenterRequestForm({
               />
               {errors.centerName && (
                 <p className="text-sm text-red-500">{errors.centerName.message}</p>
+              )}
+            </section>
+
+            {/* URL Slug */}
+            <section className="space-y-3">
+              <Label className="text-sm font-medium text-[#2c3e2d]">
+                Website URL <span className="text-red-500">*</span>
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#78909c] pointer-events-none">
+                  /c/
+                </span>
+                <Input
+                  {...register("slug")}
+                  placeholder="my-language-school"
+                  className="rounded-xl h-11 border-[#00695c]/15 pl-10"
+                />
+              </div>
+              <p className="text-xs text-[#78909c]">
+                Your public page will be at: yourdomain.com/c/{watch("slug") || "your-slug"}
+              </p>
+              {errors.slug && (
+                <p className="text-sm text-red-500">{errors.slug.message}</p>
               )}
             </section>
 

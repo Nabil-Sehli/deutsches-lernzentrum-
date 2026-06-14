@@ -15,6 +15,7 @@ const Profile = lazy(() => import('./pages/Profile'))
 const RegisterCenter = lazy(() => import('./pages/RegisterCenter'))
 const GermanyMapPage = lazy(() => import('./pages/GermanyMapPage'))
 const AdminPortal = lazy(() => import('./pages/AdminPortal'))
+const CenterPage = lazy(() => import('./pages/CenterPage'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
 function LoadingFallback() {
@@ -49,6 +50,7 @@ export default function App() {
         <Route path="/register-center" element={<ProtectedRoute><RegisterCenter /></ProtectedRoute>} />
         <Route path="/map" element={<ProtectedRoute><GermanyMapPage /></ProtectedRoute>} />
         <Route path="/admin-portal" element={<ProtectedRoute><AdminPortal /></ProtectedRoute>} />
+        <Route path="/c/:slug" element={<CenterPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>

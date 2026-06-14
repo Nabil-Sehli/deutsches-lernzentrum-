@@ -27,6 +27,7 @@ export const centerRequestRouter = createRouter({
         centerName: z.string().min(1).max(255),
         centerBio: z.string().optional(),
         logo: z.string().optional().nullable(),
+        slug: z.string().min(1).max(255).regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens"),
         emails: z.array(emailEntry).min(1),
         locations: z.array(locationEntry).min(1),
         phones: z.array(phoneEntry).min(1),
@@ -56,11 +57,20 @@ export const centerRequestRouter = createRouter({
         throw new TRPCError({ code: "CONFLICT", message: "You already have a pending request" });
       }
 
+      const [existingSlug] = await db
+        .select()
+        .from(centerRequests)
+        .where(eq(centerRequests.slug, input.slug));
+      if (existingSlug) {
+        throw new TRPCError({ code: "CONFLICT", message: "This URL slug is already taken" });
+      }
+
       const [req] = await db.insert(centerRequests).values({
         teacherId: ctx.user.id,
         centerName: input.centerName,
         centerBio: input.centerBio ?? "",
         logo: input.logo,
+        slug: input.slug,
       });
 
       const requestId = Number(req.insertId);
@@ -95,7 +105,7 @@ export const centerRequestRouter = createRouter({
         );
       }
 
-      return { success: true, requestId };
+      return { success: true, requestId, slug: input.slug };
     }),
 
   myRequest: authedQuery.query(async ({ ctx }) => {
@@ -175,14 +185,13 @@ export const centerRequestRouter = createRouter({
       if (!req) throw new TRPCError({ code: "NOT_FOUND" });
       if (req.status !== "pending") throw new TRPCError({ code: "CONFLICT", message: "Request already processed" });
 
-      const slug = req.centerName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + req.id;
-
       const [center] = await db.insert(centers).values({
         name: req.centerName,
         description: req.centerBio ?? "",
         logo: req.logo,
         adminId: req.teacherId,
-        slug,
+        slug: req.slug,
+        requestId: req.id,
       });
 
       const centerId = Number(center.insertId);
@@ -194,7 +203,7 @@ export const centerRequestRouter = createRouter({
         .set({ status: "approved", reviewedBy: ctx.user.id, reviewedAt: new Date() })
         .where(eq(centerRequests.id, input.requestId));
 
-      return { success: true, centerId, slug };
+      return { success: true, centerId, slug: req.slug };
     }),
 
   reject: superAdminQuery
@@ -219,4 +228,40 @@ export const centerRequestRouter = createRouter({
   checkAdmin: superAdminQuery.query(async () => {
     return { admin: true };
   }),
+
+  getBySlug: publicQuery
+    .input(z.object({ slug: z.string().min(1) }))
+    .query(async ({ input }) => {
+      const db = getDb();
+      const [center] = await db
+        .select()
+        .from(centers)
+        .where(eq(centers.slug, input.slug));
+      if (!center) throw new TRPCError({ code: "NOT_FOUND", message: "Center not found" });
+
+      const [request] = await db
+        .select()
+        .from(centerRequests)
+        .where(eq(centerRequests.id, center.requestId!));
+      if (!request || request.status !== "approved") throw new TRPCError({ code: "NOT_FOUND" });
+
+      const [emails, locations, phones, albums] = await Promise.all([
+        db.select().from(centerRequestEmails).where(eq(centerRequestEmails.requestId, request.id)),
+        db.select().from(centerRequestLocations).where(eq(centerRequestLocations.requestId, request.id)),
+        db.select().from(centerRequestPhones).where(eq(centerRequestPhones.requestId, request.id)),
+        db.select().from(centerRequestAlbums).where(eq(centerRequestAlbums.requestId, request.id)),
+      ]);
+
+      return {
+        id: center.id,
+        name: center.name,
+        description: center.description,
+        logo: center.logo,
+        slug: center.slug,
+        emails,
+        locations,
+        phones,
+        albums,
+      };
+    }),
 });
