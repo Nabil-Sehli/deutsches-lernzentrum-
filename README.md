@@ -1,73 +1,67 @@
-# React + TypeScript + Vite
+# Deutsches Lernzentrum (German Learning Center)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack platform for managing German language learning centers. Teachers can submit center creation requests, and admins can approve or reject them through a built-in admin portal.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS, shadcn/ui
+- **Backend:** Hono, tRPC v11, Drizzle ORM
+- **Database:** MySQL
+- **Auth:** JWT (jose) + bcrypt
+- **i18n:** i18next (DE/EN)
 
-## React Compiler
+## Getting Started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Install dependencies
+npm install
 
-## Expanding the ESLint configuration
+# Set up environment
+cp .env.example .env  # configure your MySQL connection
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+# Push database schema
+npm run db:push
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+# Seed admin user
+npm run db:seed
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Start dev server
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Scripts
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start Vite dev server |
+| `npm run build` | Build frontend + API |
+| `npm run start` | Production start |
+| `npm run check` | TypeScript check |
+| `npm run lint` | ESLint |
+| `npm run test` | Vitest |
+| `npm run db:generate` | Generate Drizzle migrations |
+| `npm run db:migrate` | Run migrations |
+| `npm run db:push` | Push schema to database |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Project Structure
+
+```
+├── api/              # Backend (Hono + tRPC routers)
+│   ├── auth-router.ts
+│   ├── center-request-router.ts
+│   ├── middleware.ts
+│   └── queries/
+├── db/               # Database schema & seed
+│   ├── schema.ts
+│   ├── relations.ts
+│   ├── seed.ts
+│   └── index.ts
+├── src/              # Frontend
+│   ├── components/   # UI components (shadcn + custom)
+│   ├── pages/        # Route pages
+│   ├── providers/    # tRPC, i18n, theme
+│   ├── lib/          # Form schemas, helpers
+│   └── data/         # Static data (countries, etc.)
+├── public/
+└── scripts/
 ```

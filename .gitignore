@@ -31,6 +31,10 @@ dist-ssr
 *.sqlite
 *.sqlite3
 db/migrations/*.sql
+# Sensitive files
+cookies.txt
+info.md
+
 # TypeScript cache
 *.tsbuildinfo
 # Build outputs
