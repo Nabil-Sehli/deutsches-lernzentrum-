@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
+import { trpc } from "@/providers/trpc";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./LanguageSwitcher";
 import CenterRequestForm from "./CenterRequestForm";
@@ -14,6 +15,7 @@ import {
   MapPin,
   Building2,
   Shield,
+  ExternalLink,
 } from "lucide-react";
 
 function DZLogo() {
@@ -45,6 +47,11 @@ export default function Navigation() {
   const isTeacher = user?.role === "teacher";
   const isAdmin = user?.role === "admin";
   const [requestFormOpen, setRequestFormOpen] = useState(false);
+
+  const myRequest = trpc.centerRequest.myRequest.useQuery(undefined, {
+    enabled: isTeacher,
+  });
+  const centerSlug = myRequest.data?.status === "approved" ? myRequest.data.slug : null;
 
   return (
     <>
@@ -112,6 +119,15 @@ export default function Navigation() {
                   >
                     <Settings className="w-4 h-4" />
                     {t("nav.manageCenter")}
+                  </Link>
+                )}
+                {centerSlug && (
+                  <Link
+                    to={`/c/${centerSlug}`}
+                    className="px-3 py-1.5 text-sm font-medium text-[#00695c] rounded-lg hover:bg-[#00695c]/6 transition-colors flex items-center gap-1.5"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    View My Center
                   </Link>
                 )}
                 <Link
@@ -222,6 +238,16 @@ export default function Navigation() {
                     >
                       <Settings className="w-5 h-5" />
                       {t("nav.manageCenter")}
+                    </Link>
+                  )}
+                  {centerSlug && (
+                    <Link
+                      to={`/c/${centerSlug}`}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#00695c] font-medium hover:bg-[#00695c]/6 transition-colors"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      <ExternalLink className="w-5 h-5" />
+                      View My Center
                     </Link>
                   )}
                   <Link
