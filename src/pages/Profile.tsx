@@ -25,7 +25,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { profileSchema, adminProfileSchema, type ProfileForm, type AdminProfileForm } from "@/lib/form-schemas";
-import { ArrowLeft, Loader2, Save, User } from "lucide-react";
+import { ArrowLeft, Loader2, Save, User, Upload } from "lucide-react";
+import { useState, useRef } from "react";
 
 export default function Profile() {
   const { t } = useTranslation();
@@ -58,6 +59,42 @@ export default function Profile() {
   });
 
   const utils = trpc.useUtils();
+  const getUploadUrl = trpc.upload.getUrl.useMutation();
+  const hiddenInput = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const updateAvatarMutation = trpc.auth.updateProfile.useMutation({
+    onSuccess: () => utils.auth.me.invalidate(),
+  });
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { uploadUrl, publicUrl } = await getUploadUrl.mutateAsync({
+        fileName: file.name,
+        contentType: file.type,
+      });
+      await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+      if (isAdmin) {
+        updateAvatarMutation.mutate({
+          name: user?.name ?? "",
+          avatar: publicUrl,
+        });
+      } else {
+        form.setValue("avatar", publicUrl);
+      }
+    } finally {
+      setUploading(false);
+      if (hiddenInput.current) hiddenInput.current.value = "";
+    }
+  };
+
   const updateMutation = trpc.auth.updateProfile.useMutation({
     onSuccess: () => {
       utils.auth.me.invalidate();
@@ -114,19 +151,36 @@ export default function Profile() {
 
           <Card className="clay-card border-0">
             <CardContent className="p-8">
-              <div className="flex items-center gap-4 mb-8 pb-6 border-b border-[#00695c]/8">
-                <div className="w-16 h-16 rounded-full bg-[#00695c]/10 flex items-center justify-center">
-                  {user.avatar ? (
-                    <img
-                      src={user.avatar}
-                      alt=""
-                      className="w-full h-full rounded-full object-cover"
-                    />
-                  ) : (
-                    <User className="w-8 h-8 text-[#00695c]" />
-                  )}
+              <div className="flex items-start gap-5 mb-8 pb-6 border-b border-[#00695c]/8">
+                <div className="relative shrink-0">
+                  <div className="w-20 h-20 rounded-full bg-[#00695c]/10 flex items-center justify-center overflow-hidden">
+                    {form.watch("avatar") ? (
+                      <img
+                        src={form.watch("avatar")}
+                        alt=""
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-10 h-10 text-[#00695c]" />
+                    )}
+                  </div>
+                  <input
+                    ref={hiddenInput}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                  />
+                  <button
+                    type="button"
+                    disabled={uploading}
+                    onClick={() => hiddenInput.current?.click()}
+                    className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#00695c] text-white flex items-center justify-center shadow-md hover:bg-[#004d40] transition-colors disabled:opacity-50"
+                  >
+                    {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                  </button>
                 </div>
-                <div>
+                <div className="pt-1">
                   <h2 className="text-lg font-semibold text-[#2c3e2d]">
                     {user.name}
                   </h2>
