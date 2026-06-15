@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { Building2, Mail, MapPin, Phone, ChevronLeft, ChevronRight } from "lucide-react";
@@ -154,9 +154,30 @@ export default function CenterPage() {
 
 function Slideshow({ images, centerName }: { images: string[]; centerName: string }) {
   const [current, setCurrent] = useState(0);
+  const [leaving, setLeaving] = useState<{ url: string; id: number } | null>(null);
+  const [fadeOut, setFadeOut] = useState(false);
+  const fadeId = useRef(0);
 
-  const prev = useCallback(() => setCurrent((i) => (i === 0 ? images.length - 1 : i - 1)), [images.length]);
-  const next = useCallback(() => setCurrent((i) => (i === images.length - 1 ? 0 : i + 1)), [images.length]);
+  const goTo = useCallback((next: number) => {
+    const id = ++fadeId.current;
+    setFadeOut(false);
+    setLeaving({ url: images[current], id });
+    setCurrent(next);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setFadeOut(true));
+    });
+    setTimeout(() => {
+      setLeaving((prev) => prev?.id === id ? null : prev);
+    }, 800);
+  }, [current, images]);
+
+  const prev = useCallback(() => {
+    goTo(current === 0 ? images.length - 1 : current - 1);
+  }, [current, images.length, goTo]);
+
+  const next = useCallback(() => {
+    goTo(current === images.length - 1 ? 0 : current + 1);
+  }, [current, images.length, goTo]);
 
   useEffect(() => {
     const timer = setInterval(next, 5000);
@@ -167,12 +188,21 @@ function Slideshow({ images, centerName }: { images: string[]; centerName: strin
 
   return (
     <div className="relative group">
-      <div className="aspect-[21/9] rounded-3xl overflow-hidden shadow-lg bg-[#00695c]/5">
+      <div className="aspect-[21/9] rounded-3xl overflow-hidden shadow-lg bg-[#00695c]/5 relative">
         <img
           src={images[current]}
           alt={`${centerName} photo ${current + 1}`}
-          className="w-full h-full object-cover transition-opacity duration-500"
+          className="w-full h-full object-cover"
         />
+        {leaving && (
+          <img
+            key={leaving.id}
+            src={leaving.url}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out"
+            style={{ opacity: fadeOut ? 0 : 1 }}
+          />
+        )}
       </div>
       {images.length > 1 && (
         <>
@@ -192,7 +222,7 @@ function Slideshow({ images, centerName }: { images: string[]; centerName: strin
             {images.map((_, i) => (
               <button
                 key={i}
-                onClick={() => setCurrent(i)}
+                onClick={() => goTo(i)}
                 className={`w-2 h-2 rounded-full transition-all ${
                   i === current ? "bg-white w-6" : "bg-white/50"
                 }`}

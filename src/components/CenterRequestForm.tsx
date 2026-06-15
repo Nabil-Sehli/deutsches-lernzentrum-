@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Loader2, Upload, X, Plus, Trash2, Globe, MapPin, Building2, Info,
+  Loader2, Upload, X, Plus, Trash2, Globe, MapPin, Building2, Info, ChevronDown,
 } from "lucide-react";
 
 const termsDE = `ALLGEMEINE NUTZUNGSBEDINGUNGEN (TERMS OF SERVICE)
@@ -464,6 +464,7 @@ export default function CenterRequestForm({
                   </Button>
                 )}
               </div>
+              <p className="text-xs text-[#78909c]">Supported: JPG, PNG, WebP</p>
               {logoVal && (
                 <div className="w-24 h-24 rounded-2xl overflow-hidden border border-[#00695c]/10">
                   <img src={logoVal} alt="logo" className="w-full h-full object-cover" />
@@ -595,18 +596,25 @@ export default function CenterRequestForm({
                       <div>
                         <Label className="text-xs text-[#78909c]">Country</Label>
                         <div className="relative mt-1">
-                          <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78909c]" />
-                          <Input
+                          <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78909c] pointer-events-none" />
+                          <select
                             {...register(`locations.${i}.country`)}
-                            placeholder="Country"
-                            className="rounded-xl h-11 border-[#00695c]/15 pl-10"
-                          />
+                            className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white pl-10 pr-10 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#00695c] appearance-none cursor-pointer"
+                          >
+                            <option value="" disabled>Country</option>
+                            {countries.map((c) => (
+                              <option key={c.name} value={c.name}>
+                                {c.flag} {c.name}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78909c] pointer-events-none" />
                         </div>
                       </div>
                       <div>
                         <Label className="text-xs text-[#78909c]">City</Label>
                         <div className="relative mt-1">
-                          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78909c]" />
+                          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78909c] pointer-events-none" />
                           <Input
                             {...register(`locations.${i}.city`)}
                             placeholder="City"
@@ -718,6 +726,7 @@ export default function CenterRequestForm({
                 )}
                 Upload Photos
               </Button>
+              <p className="text-xs text-[#78909c]">Supported: JPG, PNG, WebP</p>
               {albumVal.length > 0 && (
                 <div className="grid grid-cols-4 gap-2">
                   {albumVal.map((url, i) => (
@@ -765,6 +774,7 @@ export default function CenterRequestForm({
                 )}
                 Upload Documents
               </Button>
+              <p className="text-xs text-[#78909c]">Supported: PDF, JPG, PNG</p>
               {docVal.length > 0 && (
                 <div className="space-y-2">
                   {docVal.map((doc, i) => (
