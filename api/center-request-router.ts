@@ -239,6 +239,7 @@ export const centerRequestRouter = createRouter({
         .where(eq(centers.slug, input.slug));
       if (!center) throw new TRPCError({ code: "NOT_FOUND", message: "Center not found" });
 
+      let teacher: { name: string | null; email: string; avatar: string | null } | null = null;
       let emails: { id: number; email: string }[] = [];
       let locations: { id: number; country: string; city: string; address: string }[] = [];
       let phones: { id: number; countryCode: string; number: string }[] = [];
@@ -250,6 +251,12 @@ export const centerRequestRouter = createRouter({
           .from(centerRequests)
           .where(eq(centerRequests.id, center.requestId));
         if (request && request.status === "approved") {
+          const [user] = await db
+            .select({ name: users.name, email: users.email, avatar: users.avatar })
+            .from(users)
+            .where(eq(users.id, center.adminId));
+          if (user) teacher = user;
+
           [emails, locations, phones, albums] = await Promise.all([
             db.select().from(centerRequestEmails).where(eq(centerRequestEmails.requestId, request.id)),
             db.select().from(centerRequestLocations).where(eq(centerRequestLocations.requestId, request.id)),
@@ -265,6 +272,7 @@ export const centerRequestRouter = createRouter({
         description: center.description,
         logo: center.logo,
         slug: center.slug,
+        teacher,
         emails,
         locations,
         phones,

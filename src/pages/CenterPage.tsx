@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router";
 import { trpc } from "@/providers/trpc";
-import { Building2, Mail, MapPin, Phone, ChevronLeft, ChevronRight } from "lucide-react";
+import { Building2, Mail, MapPin, Phone, ChevronLeft, ChevronRight, User } from "lucide-react";
 
 export default function CenterPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -74,6 +74,25 @@ export default function CenterPage() {
 
           {/* Contact Info */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Teacher */}
+            {data.teacher && (
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#00695c]/8">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-[#00695c]/10 flex items-center justify-center overflow-hidden">
+                    {data.teacher.avatar ? (
+                      <img src={data.teacher.avatar} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-5 h-5 text-[#00695c]" />
+                    )}
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-[#2c3e2d]">{data.teacher.name ?? "Teacher"}</h2>
+                    <p className="text-xs text-[#78909c]">{data.teacher.email}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Emails */}
             {data.emails && data.emails.length > 0 && (
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#00695c]/8">
