@@ -78,7 +78,7 @@ export default function CenterPage() {
             {data.teacher && (
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#00695c]/8">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-[#00695c]/10 flex items-center justify-center overflow-hidden">
+                  <div className="w-10 h-10 rounded-full bg-[#00695c]/10 flex items-center justify-center overflow-hidden shrink-0">
                     {data.teacher.avatar ? (
                       <img src={data.teacher.avatar} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -90,6 +90,9 @@ export default function CenterPage() {
                     <p className="text-xs text-[#78909c]">{data.teacher.email}</p>
                   </div>
                 </div>
+                {data.teacher.bio && (
+                  <p className="text-sm text-[#2c3e2d] leading-relaxed">{data.teacher.bio}</p>
+                )}
               </div>
             )}
 
