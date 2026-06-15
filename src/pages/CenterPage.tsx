@@ -34,7 +34,7 @@ export default function CenterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#e8f5e9]">
+    <div className="min-h-screen" style={{ backgroundColor: data.themeColor ?? "#e8f5e9" }}>
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-[#E6DFD3] shadow-sm">
         <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="font-serif text-[#182E21] font-bold text-base tracking-tight">
@@ -48,19 +48,34 @@ export default function CenterPage() {
 
       <main className="pt-16">
         {/* Hero */}
-        <section className="relative bg-gradient-to-br from-[#00695c] to-[#004d40] text-white">
-          <div className="max-w-[1200px] mx-auto px-6 py-16 md:py-24">
-            <div className="flex flex-col md:flex-row items-center gap-8">
-              {data.logo && (
-                <div className="w-28 h-28 md:w-36 md:h-36 rounded-3xl overflow-hidden border-4 border-white/20 shadow-xl shrink-0 bg-white">
-                  <img src={data.logo} alt={data.name} className="w-full h-full object-cover" />
-                </div>
-              )}
-              <div className="text-center md:text-left">
-                <h1 className="text-3xl md:text-5xl font-bold mb-3">{data.name}</h1>
-                {data.description && (
-                  <p className="text-lg text-white/80 max-w-2xl">{data.description}</p>
+        <section className="relative overflow-hidden" style={{ backgroundColor: data.themeColor ?? "#e8f5e9" }}>
+          {data.banner && (
+            <img
+              src={data.banner}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{
+                maskImage: "linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%), linear-gradient(to bottom, black 98%, transparent 100%)",
+                WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%), linear-gradient(to bottom, black 98%, transparent 100%)",
+                maskComposite: "intersect",
+                WebkitMaskComposite: "intersect",
+              }}
+            />
+          )}
+          <div className="relative max-w-[1200px] mx-auto px-6 py-20 md:py-28">
+            <div className="bg-black/30 backdrop-blur-sm rounded-2xl p-5 md:p-8 w-fit max-w-lg">
+              <div className="flex flex-row items-center gap-5">
+                {data.logo && (
+                  <div className="w-20 h-20 md:w-28 md:h-28 rounded-2xl overflow-hidden border-4 border-white/20 shadow-xl shrink-0 bg-white">
+                    <img src={data.logo} alt={data.name} className="w-full h-full object-cover" />
+                  </div>
                 )}
+                <div className="min-w-0">
+                  <h1 className="text-2xl md:text-3xl font-bold text-white whitespace-nowrap">{data.name}</h1>
+                  {data.description && (
+                    <p className="text-sm md:text-base text-white/80 mt-1.5 whitespace-normal break-words">{data.description}</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>

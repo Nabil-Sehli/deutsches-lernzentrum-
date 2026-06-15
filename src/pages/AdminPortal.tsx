@@ -13,6 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Dialog, DialogContent,
+} from "@/components/ui/dialog";
+import {
   Form, FormField, FormItem, FormLabel, FormControl, FormMessage,
 } from "@/components/ui/form";
 import {
@@ -85,6 +88,16 @@ function AdminLoginForm() {
   );
 }
 
+function ImageLightbox({ url, open, onOpenChange }: { url: string; open: boolean; onOpenChange: (v: boolean) => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="rounded-3xl border-0 shadow-xl max-w-4xl p-2 bg-black/90">
+        <img src={url} alt="" className="w-full h-auto max-h-[85vh] object-contain rounded-2xl" />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function RequestDetailCard({
   req,
   onApprove,
@@ -97,6 +110,7 @@ function RequestDetailCard({
   const [expanded, setExpanded] = useState(false);
   const [rejectNotes, setRejectNotes] = useState("");
   const [showReject, setShowReject] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   return (
     <Card className="clay-card border-0">
@@ -133,9 +147,9 @@ function RequestDetailCard({
               {req.logo && (
                 <div>
                   <p className="text-xs font-medium text-[#78909c] mb-1">Logo</p>
-                  <div className="w-16 h-16 rounded-xl overflow-hidden border border-[#00695c]/10">
+                  <button type="button" onClick={() => setLightboxUrl(req.logo)} className="w-16 h-16 rounded-xl overflow-hidden border border-[#00695c]/10 cursor-pointer hover:ring-2 hover:ring-[#00695c]/40 transition-shadow">
                     <img src={req.logo} alt="" className="w-full h-full object-cover" />
-                  </div>
+                  </button>
                 </div>
               )}
               <div>
@@ -197,9 +211,14 @@ function RequestDetailCard({
                 </p>
                 <div className="grid grid-cols-4 gap-2">
                   {req.albums.map((a: { id: number; imageUrl: string }) => (
-                    <div key={a.id} className="aspect-square rounded-xl overflow-hidden border border-[#00695c]/10">
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => setLightboxUrl(a.imageUrl)}
+                      className="aspect-square rounded-xl overflow-hidden border border-[#00695c]/10 cursor-pointer hover:ring-2 hover:ring-[#00695c]/40 transition-shadow"
+                    >
                       <img src={a.imageUrl} alt="" className="w-full h-full object-cover" />
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -262,6 +281,12 @@ function RequestDetailCard({
             )}
           </div>
         )}
+
+        <ImageLightbox
+          url={lightboxUrl ?? ""}
+          open={lightboxUrl !== null}
+          onOpenChange={(v) => { if (!v) setLightboxUrl(null); }}
+        />
       </CardContent>
     </Card>
   );

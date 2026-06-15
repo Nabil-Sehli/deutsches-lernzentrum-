@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import Navigation from "@/components/Navigation";
 import { useAuth } from "@/hooks/useAuth";
@@ -46,6 +46,10 @@ import {
   Save,
   Upload,
   Image,
+  X,
+  Globe,
+  MapPin,
+  ChevronDown,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -58,11 +62,19 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   createLessonSchema,
   type CreateLessonForm,
   questionSchema,
   type QuestionForm,
 } from "@/lib/form-schemas";
+import { countries } from "@/data/countries";
 
 function CreateLessonDialog({
   open,
@@ -825,7 +837,7 @@ export default function Admin() {
                   </Button>
                 </Card>
               ) : (
-                <CenterSettingsForm center={stats.center} />
+                <CenterSettingsForm centerId={stats.center.id} />
               )}
             </TabsContent>
           </Tabs>
@@ -835,21 +847,60 @@ export default function Admin() {
   );
 }
 
-function CenterSettingsForm({ center }: { center: { id: number; name: string; description: string | null; logo: string | null; banner: string | null; address: string | null; phone: string | null } }) {
+function CenterSettingsForm({ centerId }: { centerId: number }) {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
-  const [name, setName] = useState(center.name);
-  const [description, setDescription] = useState(center.description ?? "");
-  const [logo, setLogo] = useState(center.logo ?? "");
-  const [banner, setBanner] = useState(center.banner ?? "");
-  const [address, setAddress] = useState(center.address ?? "");
-  const [phone, setPhone] = useState(center.phone ?? "");
-  const [uploading, setUploading] = useState<"logo" | "banner" | null>(null);
+  const { data: settings, isLoading } = trpc.center.settings.useQuery();
 
-  const updateMutation = trpc.center.update.useMutation({
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [logo, setLogo] = useState("");
+  const [banner, setBanner] = useState("");
+  const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
+  const [emails, setEmails] = useState<{ email: string }[]>([{ email: "" }]);
+  const [locations, setLocations] = useState<{ country: string; city: string; address: string }[]>([
+    { country: "", city: "", address: "" },
+  ]);
+  const [phones, setPhones] = useState<{ countryCode: string; number: string }[]>([
+    { countryCode: "49", number: "" },
+  ]);
+  const [albumImages, setAlbumImages] = useState<string[]>([]);
+  const [themeColor, setThemeColor] = useState("#e8f5e9");
+  const [uploading, setUploading] = useState<"logo" | "banner" | "album" | null>(null);
+
+  useEffect(() => {
+    if (settings) {
+      setName(settings.name);
+      setDescription(settings.description ?? "");
+      setLogo(settings.logo ?? "");
+      setBanner(settings.banner ?? "");
+      setAddress(settings.address ?? "");
+      setPhone(settings.phone ?? "");
+      setEmails(settings.emails && settings.emails.length > 0 ? settings.emails : [{ email: "" }]);
+      setLocations(
+        settings.locations && settings.locations.length > 0
+          ? settings.locations
+          : [{ country: "", city: "", address: "" }]
+      );
+      setPhones(
+        settings.phones && settings.phones.length > 0
+          ? settings.phones
+          : [{ countryCode: "49", number: "" }]
+      );
+      setAlbumImages(settings.albumImages ?? []);
+      setThemeColor(settings.themeColor ?? "#e8f5e9");
+    }
+  }, [settings]);
+
+  const saveMutation = trpc.center.update.useMutation({
     onSuccess: () => {
+      utils.center.settings.invalidate();
       utils.center.dashboardStats.invalidate();
       utils.center.myCenter.invalidate();
+    },
+    onError: (err) => {
+      alert("Save failed: " + err.message);
     },
   });
 
@@ -862,29 +913,79 @@ function CenterSettingsForm({ center }: { center: { id: number; name: string; de
         fileName: file.name,
         contentType: file.type,
       });
-      await fetch(uploadUrl, {
+      const res = await fetch(uploadUrl, {
         method: "PUT",
         body: file,
         headers: { "Content-Type": file.type },
       });
+      if (!res.ok) throw new Error(`Upload failed (${res.status})`);
       if (field === "logo") setLogo(publicUrl);
       else setBanner(publicUrl);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Upload failed";
+      alert(`Failed to upload ${field}: ${msg}`);
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const handleAlbumUpload = async (files: FileList) => {
+    const fileArray = Array.from(files);
+    if (fileArray.length === 0) return;
+    setUploading("album");
+    try {
+      const urls = await Promise.all(
+        fileArray.map(async (file) => {
+          const { uploadUrl, publicUrl } = await getUploadUrl.mutateAsync({
+            fileName: file.name,
+            contentType: file.type,
+          });
+          await fetch(uploadUrl, {
+            method: "PUT",
+            body: file,
+            headers: { "Content-Type": file.type },
+          });
+          return publicUrl;
+        })
+      );
+      setAlbumImages((prev) => [...prev, ...urls]);
     } finally {
       setUploading(null);
     }
   };
 
   const handleSave = () => {
-    updateMutation.mutate({
-      id: center.id,
+    const payload = {
+      id: centerId,
       name,
-      description: description || undefined,
-      logo: logo || undefined,
-      banner: banner || undefined,
-      address: address || undefined,
-      phone: phone || undefined,
-    });
+      description: description || null,
+      logo: logo || null,
+      banner: banner || null,
+      address: address || null,
+      phone: phone || null,
+      emails: emails.filter((e) => e.email.trim() !== ""),
+      locations: locations.filter((l) => l.country && l.city),
+      phones: phones.filter((p) => p.number.trim() !== ""),
+      albumImages,
+      themeColor,
+    };
+    saveMutation.mutate(payload);
   };
+
+  if (isLoading) {
+    return (
+      <Card className="clay-card border-0 p-8">
+        <div className="flex items-start gap-5">
+          <div className="w-16 h-16 rounded-2xl bg-[#00695c]/8 animate-pulse shrink-0" />
+          <div className="flex-1 space-y-3">
+            <div className="h-6 w-48 bg-[#00695c]/8 rounded-lg animate-pulse" />
+            <div className="h-4 w-full bg-[#00695c]/8 rounded-lg animate-pulse" />
+            <div className="h-4 w-3/4 bg-[#00695c]/8 rounded-lg animate-pulse" />
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -898,7 +999,7 @@ function CenterSettingsForm({ center }: { center: { id: number; name: string; de
                 type="button"
                 variant="outline"
                 disabled={uploading === "logo"}
-                onClick={() => document.getElementById("logo-upload")?.click()}
+                onClick={() => document.getElementById("settings-logo-upload")?.click()}
                 className="rounded-xl h-11 border-[#00695c]/15 text-[#2c3e2d]"
               >
                 {uploading === "logo" ? (
@@ -921,11 +1022,10 @@ function CenterSettingsForm({ center }: { center: { id: number; name: string; de
               )}
             </div>
             <input
-              id="logo-upload"
+              id="settings-logo-upload"
               type="file"
               accept="image/*"
               className="hidden"
-              disabled={uploading === "logo"}
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) handleImageUpload("logo", file);
@@ -938,11 +1038,7 @@ function CenterSettingsForm({ center }: { center: { id: number; name: string; de
               </div>
             ) : (
               <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-[#00695c]/15 flex items-center justify-center">
-                {uploading === "logo" ? (
-                  <Loader2 className="w-8 h-8 text-[#00695c] animate-spin" />
-                ) : (
-                  <Image className="w-8 h-8 text-[#78909c]" />
-                )}
+                <Image className="w-8 h-8 text-[#78909c]" />
               </div>
             )}
           </CardContent>
@@ -955,7 +1051,7 @@ function CenterSettingsForm({ center }: { center: { id: number; name: string; de
                 type="button"
                 variant="outline"
                 disabled={uploading === "banner"}
-                onClick={() => document.getElementById("banner-upload")?.click()}
+                onClick={() => document.getElementById("settings-banner-upload")?.click()}
                 className="rounded-xl h-11 border-[#00695c]/15 text-[#2c3e2d]"
               >
                 {uploading === "banner" ? (
@@ -978,11 +1074,10 @@ function CenterSettingsForm({ center }: { center: { id: number; name: string; de
               )}
             </div>
             <input
-              id="banner-upload"
+              id="settings-banner-upload"
               type="file"
               accept="image/*"
               className="hidden"
-              disabled={uploading === "banner"}
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) handleImageUpload("banner", file);
@@ -995,11 +1090,7 @@ function CenterSettingsForm({ center }: { center: { id: number; name: string; de
               </div>
             ) : (
               <div className="w-full h-20 rounded-2xl border-2 border-dashed border-[#00695c]/15 flex items-center justify-center">
-                {uploading === "banner" ? (
-                  <Loader2 className="w-8 h-8 text-[#00695c] animate-spin" />
-                ) : (
-                  <Image className="w-8 h-8 text-[#78909c]" />
-                )}
+                <Image className="w-8 h-8 text-[#78909c]" />
               </div>
             )}
           </CardContent>
@@ -1028,43 +1119,300 @@ function CenterSettingsForm({ center }: { center: { id: number; name: string; de
         </CardContent>
       </Card>
 
-      {/* Contact Info */}
+      {/* Contact Emails */}
       <Card className="clay-card border-0">
-        <CardContent className="p-6 space-y-5">
-          <h3 className="font-semibold text-[#2c3e2d]">{t("admin.contactInfo")}</h3>
-          <div>
-            <label className="text-sm font-medium text-[#2c3e2d]">{t("admin.addressLabel")}</label>
-            <Textarea
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder={t("admin.addressPlaceholder")}
-              className="rounded-xl min-h-[80px] border-[#00695c]/15 mt-1.5"
-            />
+        <CardContent className="p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-[#2c3e2d]">{t("admin.contactEmails")}</h3>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setEmails((prev) => [...prev, { email: "" }])}
+              className="rounded-full border-[#00695c]/15 text-xs h-8"
+            >
+              <Plus className="w-3 h-3 mr-1" /> {t("admin.addEmail")}
+            </Button>
           </div>
-          <div>
-            <label className="text-sm font-medium text-[#2c3e2d]">{t("admin.phoneLabel")}</label>
-            <Input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder={t("admin.phonePlaceholder")}
-              className="rounded-xl h-11 border-[#00695c]/15 mt-1.5"
-            />
+          <div className="space-y-2">
+            {emails.map((entry, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Input
+                  value={entry.email}
+                  onChange={(e) => {
+                    const next = [...emails];
+                    next[i] = { email: e.target.value };
+                    setEmails(next);
+                  }}
+                  placeholder="email@example.com"
+                  className="rounded-xl h-11 border-[#00695c]/15 flex-1"
+                />
+                {emails.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setEmails(emails.filter((_, j) => j !== i))}
+                    className="text-red-400 hover:text-red-600 p-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
 
-      {updateMutation.error && (
-        <p className="text-sm text-red-500">{updateMutation.error.message}</p>
+      {/* Locations */}
+      <Card className="clay-card border-0">
+        <CardContent className="p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-[#2c3e2d]">{t("admin.contactLocations")}</h3>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setLocations((prev) => [...prev, { country: "", city: "", address: "" }])
+              }
+              className="rounded-full border-[#00695c]/15 text-xs h-8"
+            >
+              <Plus className="w-3 h-3 mr-1" /> {t("admin.addLocation")}
+            </Button>
+          </div>
+          <div className="space-y-4">
+            {locations.map((loc, i) => (
+              <div
+                key={i}
+                className="p-4 rounded-2xl border border-[#00695c]/10 bg-[#00695c]/3 space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-[#78909c]">
+                    {t("admin.locationLabel")} {i + 1}
+                  </span>
+                  {locations.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setLocations(locations.filter((_, j) => j !== i))}
+                      className="text-red-400 hover:text-red-600"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-xs text-[#78909c]">{t("admin.countryLabel")}</label>
+                    <div className="relative mt-1">
+                      <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78909c] pointer-events-none" />
+                      <select
+                        value={loc.country}
+                        onChange={(e) => {
+                          const next = [...locations];
+                          next[i] = { ...next[i], country: e.target.value };
+                          setLocations(next);
+                        }}
+                        className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white pl-10 pr-10 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#00695c] appearance-none cursor-pointer"
+                      >
+                        <option value="" disabled>
+                          {t("admin.countryPlaceholder")}
+                        </option>
+                        {countries.map((c) => (
+                          <option key={c.name} value={c.name}>
+                            {c.flag} {c.name}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78909c] pointer-events-none" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#78909c]">{t("admin.cityLabel")}</label>
+                    <div className="relative mt-1">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78909c] pointer-events-none" />
+                      <Input
+                        value={loc.city}
+                        onChange={(e) => {
+                          const next = [...locations];
+                          next[i] = { ...next[i], city: e.target.value };
+                          setLocations(next);
+                        }}
+                        placeholder={t("admin.cityPlaceholder")}
+                        className="rounded-xl h-11 border-[#00695c]/15 pl-10"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#78909c]">{t("admin.addressLabel")}</label>
+                    <Input
+                      value={loc.address}
+                      onChange={(e) => {
+                        const next = [...locations];
+                        next[i] = { ...next[i], address: e.target.value };
+                        setLocations(next);
+                      }}
+                      placeholder={t("admin.addressPlaceholder")}
+                      className="rounded-xl h-11 border-[#00695c]/15 mt-1"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Phone Numbers */}
+      <Card className="clay-card border-0">
+        <CardContent className="p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-[#2c3e2d]">{t("admin.contactPhones")}</h3>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPhones((prev) => [...prev, { countryCode: "49", number: "" }])}
+              className="rounded-full border-[#00695c]/15 text-xs h-8"
+            >
+              <Plus className="w-3 h-3 mr-1" /> {t("admin.addPhone")}
+            </Button>
+          </div>
+          <div className="space-y-2">
+            {phones.map((entry, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Select
+                  value={phones[i]?.countryCode ?? "49"}
+                  onValueChange={(v) => {
+                    const next = [...phones];
+                    next[i] = { ...next[i], countryCode: v };
+                    setPhones(next);
+                  }}
+                >
+                  <SelectTrigger className="w-[180px] rounded-xl h-11 border-[#00695c]/15">
+                    <SelectValue>
+                      {(() => {
+                        const code = phones[i]?.countryCode;
+                        const country = [...countries].find((c) => c.dial === code);
+                        return country ? `${country.flag} +${country.dial}` : t("admin.selectCountry");
+                      })()}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-0 shadow-xl">
+                    {countries.map((c) => (
+                      <SelectItem key={c.code} value={c.dial}>
+                        {c.flag} +{c.dial} {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  value={entry.number}
+                  onChange={(e) => {
+                    const next = [...phones];
+                    next[i] = { ...next[i], number: e.target.value };
+                    setPhones(next);
+                  }}
+                  placeholder={t("admin.phonePlaceholder")}
+                  className="rounded-xl h-11 border-[#00695c]/15 flex-1"
+                />
+                {phones.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setPhones(phones.filter((_, j) => j !== i))}
+                    className="text-red-400 hover:text-red-600 p-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Album */}
+      <Card className="clay-card border-0">
+        <CardContent className="p-6 space-y-4">
+          <h3 className="font-semibold text-[#2c3e2d]">{t("admin.photoAlbum")}</h3>
+          <input
+            id="settings-album-upload"
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files) handleAlbumUpload(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            disabled={uploading === "album"}
+            onClick={() => document.getElementById("settings-album-upload")?.click()}
+            className="rounded-xl h-11 border-[#00695c]/15 text-[#2c3e2d]"
+          >
+            {uploading === "album" ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Upload className="w-4 h-4 mr-2" />
+            )}
+            {uploading === "album" ? t("admin.uploading") : t("admin.chooseImages")}
+          </Button>
+          <p className="text-xs text-[#78909c]">{t("admin.albumSupported")}</p>
+          {albumImages.length > 0 && (
+            <div className="grid grid-cols-4 gap-2">
+              {albumImages.map((url, i) => (
+                <div key={i} className="relative group">
+                  <div className="w-full aspect-square rounded-xl overflow-hidden border border-[#00695c]/10">
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAlbumImages(albumImages.filter((_, j) => j !== i))}
+                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Theme Color */}
+      <Card className="clay-card border-0">
+        <CardContent className="p-6 space-y-4">
+          <h3 className="font-semibold text-[#2c3e2d]">{t("admin.themeColor")}</h3>
+          <div className="flex flex-wrap gap-3">
+            {["#e8f5e9","#ffffff","#f5f0e8","#e3f2fd","#fce4ec","#f3e5f5","#fff8e1","#e0f2f1","#f5f5f5","#00695c","#2c3e2d","#37474f"].map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setThemeColor(c)}
+                className={`w-9 h-9 rounded-full border-2 transition-all ${
+                  themeColor === c ? "border-[#00695c] scale-110 shadow-md" : "border-transparent hover:scale-105"
+                }`}
+                style={{ backgroundColor: c }}
+                title={c}
+              />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {saveMutation.error && (
+        <p className="text-sm text-red-500">{saveMutation.error.message}</p>
       )}
-      {updateMutation.isSuccess && (
+      {saveMutation.isSuccess && (
         <p className="text-sm text-green-600 font-medium">{t("admin.updatedSuccess")}</p>
       )}
       <Button
         onClick={handleSave}
-        disabled={updateMutation.isPending}
+        disabled={saveMutation.isPending || uploading !== null}
         className="rounded-full bg-[#00695c] hover:bg-[#004d40] font-semibold"
       >
-        {updateMutation.isPending ? (
+        {saveMutation.isPending ? (
           <Loader2 className="w-4 h-4 animate-spin mr-2" />
         ) : (
           <Save className="w-4 h-4 mr-2" />
