@@ -30,7 +30,6 @@ dist-ssr
 *.db
 *.sqlite
 *.sqlite3
-db/migrations/*.sql
 # Sensitive files
 cookies.txt
 info.md
