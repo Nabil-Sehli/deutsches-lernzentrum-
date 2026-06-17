@@ -19,6 +19,7 @@ export const chatRouter = createRouter({
         reactions: chatMessages.reactions,
         createdAt: chatMessages.createdAt,
         userName: users.name,
+        userTitle: users.title,
         userAvatar: users.avatar,
       })
       .from(chatMessages)
@@ -28,6 +29,7 @@ export const chatRouter = createRouter({
       .limit(50);
     return messages.reverse().map((m) => ({
       ...m,
+      userName: m.userTitle ? `${m.userTitle}. ${m.userName}` : m.userName,
       reactions: (m.reactions ?? []) as { emoji: string; userId: number; userName: string }[],
     }));
   }),
@@ -81,7 +83,7 @@ export const chatRouter = createRouter({
       if (existingIdx >= 0) {
         reactions.splice(existingIdx, 1);
       } else {
-        reactions.push({ emoji: input.emoji, userId: ctx.user.id, userName: ctx.user.name ?? "Unknown" });
+        reactions.push({ emoji: input.emoji, userId: ctx.user.id, userName: ctx.user.title ? `${ctx.user.title}. ${ctx.user.name ?? "Unknown"}` : (ctx.user.name ?? "Unknown") });
       }
 
       await db.update(chatMessages).set({ reactions }).where(eq(chatMessages.id, input.id));

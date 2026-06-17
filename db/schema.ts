@@ -307,6 +307,21 @@ export const meetingRooms = mysqlTable("meeting_rooms", {
 export type MeetingRoom = typeof meetingRooms.$inferSelect;
 export type InsertMeetingRoom = typeof meetingRooms.$inferInsert;
 
+export const meetingRoomMessages = mysqlTable("meeting_room_messages", {
+  id: serial("id").primaryKey(),
+  roomId: bigint("roomId", { mode: "number", unsigned: true }).notNull(),
+  userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+  message: text("message").notNull(),
+  imageUrl: varchar("imageUrl", { length: 1024 }),
+  reactions: json("reactions").default([]),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  roomIdIdx: index("meeting_room_messages_roomId_idx").on(table.roomId),
+}));
+
+export type MeetingRoomMessage = typeof meetingRoomMessages.$inferSelect;
+export type InsertMeetingRoomMessage = typeof meetingRoomMessages.$inferInsert;
+
 export const chatMessages = mysqlTable("chat_messages", {
   id: serial("id").primaryKey(),
   centerId: bigint("centerId", { mode: "number", unsigned: true }).notNull(),

@@ -49,10 +49,10 @@ export const inviteRouter = createRouter({
         .select({ count: count() })
         .from(inviteCodes)
         .where(eq(inviteCodes.centerId, ctx.user.centerId));
-      if (existing.count >= 1) {
+      if (existing.count >= 10) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Free plan limited to 1 invite code. Upgrade to Premium for unlimited codes.",
+          message: "Free plan limited to 10 invite codes. Upgrade to Premium for unlimited codes.",
         });
       }
     }

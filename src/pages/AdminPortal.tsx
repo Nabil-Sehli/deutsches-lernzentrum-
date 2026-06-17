@@ -128,7 +128,7 @@ function RequestDetailCard({
               <div>
                 <h3 className="font-semibold text-[#2c3e2d]">{req.centerName}</h3>
                 <p className="text-xs text-[#78909c]">
-                  by {req.teacher?.name ?? "Unknown"} &middot; {new Date(req.createdAt).toLocaleDateString()}
+                  by {req.teacher?.title ? `${req.teacher.title}. ` : ""}{req.teacher?.name ?? "Unknown"} &middot; {new Date(req.createdAt).toLocaleDateString()}
                 </p>
               </div>
             </div>
@@ -154,7 +154,7 @@ function RequestDetailCard({
               )}
               <div>
                 <p className="text-xs font-medium text-[#78909c] mb-1">Teacher</p>
-                <p className="text-sm text-[#2c3e2d]">{req.teacher?.name ?? "Unknown"}</p>
+                <p className="text-sm text-[#2c3e2d]">{req.teacher?.title ? `${req.teacher.title}. ` : ""}{req.teacher?.name ?? "Unknown"}</p>
                 <p className="text-xs text-[#78909c]">{req.teacher?.email}</p>
               </div>
               {req.centerBio && (
@@ -321,7 +321,7 @@ function HistoryCard({
               <div>
                 <h3 className="font-semibold text-[#2c3e2d]">{req.centerName}</h3>
                 <p className="text-xs text-[#78909c]">
-                  by {req.teacher?.name ?? "Unknown"} &middot; {new Date(req.createdAt).toLocaleDateString()}
+                  by {req.teacher?.title ? `${req.teacher.title}. ` : ""}{req.teacher?.name ?? "Unknown"} &middot; {new Date(req.createdAt).toLocaleDateString()}
                 </p>
               </div>
             </div>
@@ -334,7 +334,7 @@ function HistoryCard({
 
         {expanded && (
           <div className="mt-4 pt-4 border-t border-[#00695c]/8 space-y-3">
-            <p className="text-xs text-[#78909c]">Teacher: {req.teacher?.name ?? "Unknown"} ({req.teacher?.email})</p>
+            <p className="text-xs text-[#78909c]">Teacher: {req.teacher?.title ? `${req.teacher.title}. ` : ""}{req.teacher?.name ?? "Unknown"} ({req.teacher?.email})</p>
             {req.adminNotes && (
               <div>
                 <p className="text-xs font-medium text-[#78909c] mb-1">Admin Notes</p>

@@ -194,18 +194,15 @@ export default function Register() {
                         <FormLabel>{t("register.ageLabel")}</FormLabel>
                         <FormControl>
                           <Input
-                            type="number"
+                            type="text"
+                            inputMode="numeric"
                             placeholder={t("register.agePlaceholder")}
                             className="rounded-xl h-11 border-[#00695c]/15"
-                            {...field}
                             value={field.value ?? ""}
-                            onChange={(e) =>
-                              field.onChange(
-                                e.target.value
-                                  ? parseInt(e.target.value)
-                                  : undefined,
-                              )
-                            }
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, "");
+                              field.onChange(val ? parseInt(val, 10) : undefined);
+                            }}
                           />
                         </FormControl>
                         <FormMessage />

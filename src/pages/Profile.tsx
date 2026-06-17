@@ -183,7 +183,7 @@ export default function Profile() {
                 </div>
                 <div className="pt-1">
                   <h2 className="text-lg font-semibold text-[#2c3e2d]">
-                    {user.name}
+                    {user.title ? `${user.title}. ` : ""}{user.name}
                   </h2>
                   <p className="text-sm text-[#78909c]">
                     {user.email} &middot; {user.role === "admin" ? "Admin" : user.role === "teacher" ? t("profile.teacher") : t("profile.student")}

@@ -44,6 +44,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AdminSkeleton } from "@/components/AdminSkeleton";
+import { VideoCall } from "@/components/VideoCall";
 import {
   BookOpen,
   Users,
@@ -941,6 +942,8 @@ export default function Admin() {
             <TabsContent value="meetingRooms">
               <MeetingRoomsPanel />
             </TabsContent>
+
+
 
             {/* Chat Tab */}
             <TabsContent value="chat">
@@ -1890,140 +1893,6 @@ function UpgradeDialog({ onUpgrade, isPending }: { onUpgrade: () => void; isPend
   );
 }
 
-function MeetingRoomsPanel() {
-  const { t } = useTranslation();
-  const utils = trpc.useUtils();
-  const { data: rooms, isLoading } = trpc.meetingRooms.list.useQuery();
-  const createRoom = trpc.meetingRooms.create.useMutation({
-    onSuccess: () => utils.meetingRooms.list.invalidate(),
-  });
-  const deleteRoom = trpc.meetingRooms.delete.useMutation({
-    onSuccess: () => utils.meetingRooms.list.invalidate(),
-  });
-  const [showForm, setShowForm] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [url, setUrl] = useState("");
-  const [scheduledAt, setScheduledAt] = useState("");
-
-  const handleCreate = () => {
-    if (!name.trim() || !url.trim()) return;
-    createRoom.mutate({
-      name: name.trim(),
-      description: description.trim() || undefined,
-      url: url.trim(),
-      scheduledAt: scheduledAt || undefined,
-    });
-    setName("");
-    setDescription("");
-    setUrl("");
-    setScheduledAt("");
-    setShowForm(false);
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-[#2c3e2d]">{t("admin.tabMeetingRooms")}</h2>
-        <Button
-          onClick={() => setShowForm(!showForm)}
-          className="rounded-full bg-[#00695c] hover:bg-[#004d40] font-semibold"
-        >
-          <Plus className="w-4 h-4 mr-1" />
-          {showForm ? "Cancel" : "Add Room"}
-        </Button>
-      </div>
-
-      {showForm && (
-        <Card className="clay-card border-0">
-          <CardContent className="p-6 space-y-4">
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Room name (e.g. A1 Conversation Class)"
-              className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm"
-            />
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Description (optional)"
-              className="flex min-h-[80px] w-full rounded-xl border border-[#00695c]/15 bg-white px-4 py-3 text-sm"
-            />
-            <input
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="Meeting URL (e.g. https://zoom.us/j/...)"
-              className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm"
-            />
-            <input
-              type="datetime-local"
-              value={scheduledAt}
-              onChange={(e) => setScheduledAt(e.target.value)}
-              className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm"
-            />
-            <Button
-              onClick={handleCreate}
-              disabled={createRoom.isPending || !name.trim() || !url.trim()}
-              className="rounded-full bg-[#00695c] hover:bg-[#004d40]"
-            >
-              {createRoom.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Room"}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {isLoading ? (
-        <Card className="clay-card border-0 p-8 text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-[#00695c] mx-auto" />
-        </Card>
-      ) : !rooms || rooms.length === 0 ? (
-        <Card className="clay-card border-0 p-12 text-center">
-          <Video className="w-12 h-12 text-[#78909c] mx-auto mb-4" />
-          <p className="text-[#78909c]">No meeting rooms yet. Create one to host live sessions.</p>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {rooms.map((room) => (
-            <Card key={room.id} className="clay-card border-0">
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-[#2c3e2d]">{room.name}</h3>
-                    {room.description && (
-                      <p className="text-sm text-[#78909c] mt-1">{room.description}</p>
-                    )}
-                    <a
-                      href={room.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-[#00695c] hover:underline mt-2 inline-block"
-                    >
-                      Join Meeting →
-                    </a>
-                    {room.scheduledAt && (
-                      <p className="text-xs text-[#78909c] mt-1">
-                        Scheduled: {new Date(room.scheduledAt).toLocaleString()}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => deleteRoom.mutate({ id: room.id })}
-                    className="text-red-400 hover:text-red-600 p-1"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-const EMOJI_LIST = ["👍", "❤️", "😂", "🎉", "🔥", "😮", "🙏", "💯"];
-
 function ChatPanel() {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
@@ -2046,14 +1915,13 @@ function ChatPanel() {
   const [uploading, setUploading] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [emojiPicker, setEmojiPicker] = useState<number | null>(null);
-  const chatEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isNearBottom = useRef(true);
 
   useEffect(() => {
     if (isNearBottom.current) {
-      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" });
     }
   }, [messages]);
 
@@ -2091,7 +1959,7 @@ function ChatPanel() {
     }
     setText("");
     isNearBottom.current = true;
-    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    setTimeout(() => chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" }), 50);
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2124,7 +1992,6 @@ function ChatPanel() {
           </div>
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
 
-          {/* Image Lightbox */}
           <Dialog open={!!lightboxUrl} onOpenChange={(o) => !o && setLightboxUrl(null)}>
             <DialogContent className="max-w-3xl border-0 bg-transparent shadow-none">
               {lightboxUrl && <img src={lightboxUrl} alt="" className="w-full rounded-2xl" />}
@@ -2206,7 +2073,6 @@ function ChatPanel() {
                       )}
                       {msg.message && <p className="text-sm">{msg.message}</p>}
 
-                      {/* Reactions */}
                       {(msg.reactions as { emoji: string; userId: number; userName: string }[])?.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1.5">
                           {(msg.reactions as { emoji: string; userId: number; userName: string }[]).map((r, i) => (
@@ -2234,7 +2100,6 @@ function ChatPanel() {
                 );
               })
             )}
-            <div ref={chatEndRef} />
           </div>
 
           <div className="flex items-center gap-2 border-t border-[#00695c]/10 pt-4">
@@ -2280,3 +2145,399 @@ function ChatPanel() {
     </div>
   );
 }
+
+const EMOJI_LIST = ["👍", "❤️", "😂", "🎉", "🔥", "😮", "🙏", "💯"];
+
+function RoomChat({ room, onBack }: { room: { id: number; name: string; url?: string | null }; onBack: () => void }) {
+  const { user } = useAuth();
+  const utils = trpc.useUtils();
+  const { data: messages, isLoading } = trpc.meetingRooms.messages.useQuery(
+    { roomId: room.id },
+    { refetchInterval: 3000 }
+  );
+  const sendMessage = trpc.meetingRooms.sendMessage.useMutation({
+    onSuccess: () => utils.meetingRooms.messages.invalidate(),
+  });
+  const deleteMessage = trpc.meetingRooms.deleteMessage.useMutation({
+    onSuccess: () => utils.meetingRooms.messages.invalidate(),
+  });
+  const reactMessage = trpc.meetingRooms.reactMessage.useMutation({
+    onSuccess: () => utils.meetingRooms.messages.invalidate(),
+  });
+  const getPresignedUrl = trpc.upload.getChatUploadUrl.useMutation();
+  const [text, setText] = useState("");
+  const [pendingImage, setPendingImage] = useState<{ file: File; preview: string } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [emojiPicker, setEmojiPicker] = useState<number | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const isNearBottom = useRef(true);
+
+  useEffect(() => {
+    if (isNearBottom.current) {
+      chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" });
+    }
+  }, [messages]);
+
+  const onChatScroll = useCallback(() => {
+    const el = chatContainerRef.current;
+    if (!el) return;
+    isNearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+  }, []);
+
+  useEffect(() => {
+    return () => { if (pendingImage) URL.revokeObjectURL(pendingImage.preview); };
+  }, [pendingImage]);
+
+  const handleSend = async () => {
+    if (!text.trim() && !pendingImage) return;
+    if (pendingImage) {
+      setUploading(true);
+      try {
+        const { uploadUrl, publicUrl } = await getPresignedUrl.mutateAsync({
+          fileName: pendingImage.file.name,
+          contentType: pendingImage.file.type,
+          fileSize: pendingImage.file.size,
+        });
+        await fetch(uploadUrl, { method: "PUT", body: pendingImage.file, headers: { "Content-Type": pendingImage.file.type } });
+        sendMessage.mutate({ roomId: room.id, message: text.trim(), imageUrl: publicUrl });
+      } catch (err) {
+        console.error("Upload failed", err);
+        setUploading(false);
+        return;
+      }
+      setUploading(false);
+      setPendingImage(null);
+    } else {
+      sendMessage.mutate({ roomId: room.id, message: text.trim() });
+    }
+    setText("");
+    isNearBottom.current = true;
+    setTimeout(() => chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" }), 50);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (pendingImage) URL.revokeObjectURL(pendingImage.preview);
+    setPendingImage({ file, preview: URL.createObjectURL(file) });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <button onClick={onBack} className="text-sm text-[#00695c] hover:underline flex items-center gap-1">
+          <ChevronDown className="w-4 h-4 rotate-90" />
+          Back to rooms
+        </button>
+        <span className="text-[#78909c]">/</span>
+        <h3 className="font-semibold text-[#2c3e2d]">{room.name}</h3>
+        {room.url && (
+          <a href={room.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#00695c] hover:underline ml-auto">
+            Join Meeting →
+          </a>
+        )}
+      </div>
+
+      <Card className="clay-card border-0 relative overflow-hidden">
+        <CardContent className="p-4 relative">
+          <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03]">
+            <svg className="w-full h-full" viewBox="0 0 1200 800" preserveAspectRatio="none">
+              <defs>
+                <pattern id="room-chat" patternUnits="userSpaceOnUse" width="120" height="80" patternTransform="scale(1.5)">
+                  <path d="M0,40 Q30,20 60,40 T120,40" fill="none" stroke="#00695c" strokeWidth="2" />
+                  <path d="M0,20 Q30,0 60,20 T120,20" fill="none" stroke="#00695c" strokeWidth="1.5" opacity="0.6" />
+                  <path d="M0,60 Q30,40 60,60 T120,60" fill="none" stroke="#00695c" strokeWidth="1.5" opacity="0.6" />
+                  <path d="M0,0 Q30,-20 60,0 T120,0" fill="none" stroke="#00695c" strokeWidth="1" opacity="0.3" />
+                  <path d="M0,80 Q30,60 60,80 T120,80" fill="none" stroke="#00695c" strokeWidth="1" opacity="0.3" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#room-chat)" />
+            </svg>
+          </div>
+
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+
+          <Dialog open={!!lightboxUrl} onOpenChange={(o) => !o && setLightboxUrl(null)}>
+            <DialogContent className="max-w-3xl border-0 bg-transparent shadow-none">
+              {lightboxUrl && <img src={lightboxUrl} alt="" className="w-full rounded-2xl" />}
+            </DialogContent>
+          </Dialog>
+
+          <div ref={chatContainerRef} onScroll={onChatScroll} className="h-[400px] overflow-y-auto space-y-3 mb-4 pr-2">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="w-6 h-6 animate-spin text-[#00695c]" />
+              </div>
+            ) : !messages || messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <MessageSquare className="w-10 h-10 text-[#78909c] mb-2" />
+                <p className="text-sm text-[#78909c]">No messages yet in this room.</p>
+              </div>
+            ) : (
+              messages.map((msg) => {
+                const isOwn = msg.userId === user?.id;
+                const userReacted = (emoji: string) =>
+                  (msg.reactions as { emoji: string; userId: number }[])?.some(
+                    (r) => r.emoji === emoji && r.userId === user?.id
+                  );
+
+                return (
+                  <div key={msg.id} className={`group flex gap-2 ${isOwn ? "flex-row-reverse" : ""}`}>
+                    <div className={`max-w-[75%] rounded-2xl px-4 py-2 ${
+                      isOwn
+                        ? "bg-[#00695c] text-white rounded-tr-md"
+                        : "bg-white text-[#2c3e2d] rounded-tl-md border border-[#00695c]/10"
+                    }`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-medium opacity-70 mb-1">
+                          {msg.userName ?? "Unknown"}
+                        </p>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-black/10">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align={isOwn ? "end" : "start"} className="rounded-xl border-0 shadow-xl min-w-[140px]">
+                            <DropdownMenuItem className="relative" onSelect={(e) => { e.preventDefault(); setEmojiPicker(emojiPicker === msg.id ? null : msg.id); }}>
+                              <span className="mr-2">😊</span> React
+                              {emojiPicker === msg.id && (
+                                <div className="absolute left-0 top-full mt-1 z-50 flex gap-1 p-2 bg-white rounded-xl shadow-xl border">
+                                  {EMOJI_LIST.map((emoji) => (
+                                    <button
+                                      key={emoji}
+                                      onClick={() => { reactMessage.mutate({ id: msg.id, roomId: room.id, emoji }); setEmojiPicker(null); }}
+                                      className={`text-lg hover:scale-125 transition-transform p-0.5 ${userReacted(emoji) ? "scale-110" : ""}`}
+                                    >
+                                      {emoji}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </DropdownMenuItem>
+                            {isOwn && (
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => deleteMessage.mutate({ id: msg.id, roomId: room.id })}
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+
+                      {msg.imageUrl && (
+                        <img
+                          src={msg.imageUrl}
+                          alt=""
+                          className="max-w-full rounded-lg mb-1 max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => setLightboxUrl(msg.imageUrl!)}
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                      )}
+                      {msg.message && <p className="text-sm">{msg.message}</p>}
+
+                      {(msg.reactions as { emoji: string; userId: number; userName: string }[])?.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {(msg.reactions as { emoji: string; userId: number; userName: string }[]).map((r, i) => (
+                            <button
+                              key={i}
+                              onClick={() => reactMessage.mutate({ id: msg.id, roomId: room.id, emoji: r.emoji })}
+                              className={`text-xs px-1.5 py-0.5 rounded-full border ${
+                                r.userId === user?.id
+                                  ? "bg-white/20 border-white/30"
+                                  : "bg-white/10 border-transparent"
+                              }`}
+                              title={r.userName}
+                            >
+                              {r.emoji}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 border-t border-[#00695c]/10 pt-4">
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="rounded-full bg-[#00695c]/10 text-[#00695c] hover:bg-[#00695c]/20 h-11 w-11 p-0 shrink-0"
+            >
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            </Button>
+            {pendingImage && (
+              <div className="relative shrink-0">
+                <img src={pendingImage.preview} alt="" className="h-10 w-10 rounded-lg object-cover border border-[#00695c]/20" />
+                <button
+                  onClick={() => { URL.revokeObjectURL(pendingImage.preview); setPendingImage(null); }}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            <input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSend()}
+              placeholder={pendingImage ? "Add a caption..." : "Type a message..."}
+              className="flex-1 h-11 rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm"
+            />
+            <Button
+              onClick={handleSend}
+              disabled={sendMessage.isPending || uploading || (!text.trim() && !pendingImage)}
+              className="rounded-full bg-[#00695c] hover:bg-[#004d40] h-11 w-11 p-0 shrink-0"
+            >
+              {sendMessage.isPending || uploading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function MeetingRoomsPanel() {
+  const { t } = useTranslation();
+  const utils = trpc.useUtils();
+  const { data: rooms, isLoading } = trpc.meetingRooms.list.useQuery();
+  const createRoom = trpc.meetingRooms.create.useMutation({
+    onSuccess: () => utils.meetingRooms.list.invalidate(),
+  });
+  const deleteRoom = trpc.meetingRooms.delete.useMutation({
+    onSuccess: () => utils.meetingRooms.list.invalidate(),
+  });
+  const [showForm, setShowForm] = useState(false);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [selectedRoom, setSelectedRoom] = useState<{ id: number; name: string; url?: string | null } | null>(null);
+  const [callRoom, setCallRoom] = useState<string | null>(null);
+
+  const handleCreate = () => {
+    if (!name.trim()) return;
+    createRoom.mutate({
+      name: name.trim(),
+      description: description.trim() || undefined,
+      scheduledAt: scheduledAt || undefined,
+    });
+    setName("");
+    setDescription("");
+    setScheduledAt("");
+    setShowForm(false);
+  };
+
+  if (selectedRoom) {
+    return <RoomChat room={selectedRoom} onBack={() => setSelectedRoom(null)} />;
+  }
+
+  return (
+    <div className="space-y-4">
+      <VideoCall roomUrl={callRoom ?? ""} open={!!callRoom} onClose={() => setCallRoom(null)} />
+
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-[#2c3e2d]">{t("admin.tabMeetingRooms")}</h2>
+        <Button
+          onClick={() => setShowForm(!showForm)}
+          className="rounded-full bg-[#00695c] hover:bg-[#004d40] font-semibold"
+        >
+          <Plus className="w-4 h-4 mr-1" />
+          {showForm ? "Cancel" : "Add Room"}
+        </Button>
+      </div>
+
+      {showForm && (
+        <Card className="clay-card border-0">
+          <CardContent className="p-6 space-y-4">
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Room name (e.g. A1 Conversation Class)"
+              className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm"
+            />
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Description (optional)"
+              className="flex min-h-[80px] w-full rounded-xl border border-[#00695c]/15 bg-white px-4 py-3 text-sm"
+            />
+            <input
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+              className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm"
+            />
+            <Button
+              onClick={handleCreate}
+              disabled={createRoom.isPending || !name.trim()}
+              className="rounded-full bg-[#00695c] hover:bg-[#004d40]"
+            >
+              {createRoom.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Room"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading ? (
+        <Card className="clay-card border-0 p-8 text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-[#00695c] mx-auto" />
+        </Card>
+      ) : !rooms || rooms.length === 0 ? (
+        <Card className="clay-card border-0 p-12 text-center">
+          <Video className="w-12 h-12 text-[#78909c] mx-auto mb-4" />
+          <p className="text-[#78909c]">No meeting rooms yet. Create one to host live sessions.</p>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {rooms.map((room) => (
+            <Card key={room.id} className="clay-card border-0 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedRoom({ id: room.id, name: room.name, url: room.url })}>
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-[#2c3e2d]">{room.name}</h3>
+                    {room.description && (
+                      <p className="text-sm text-[#78909c] mt-1">{room.description}</p>
+                    )}
+                    {room.scheduledAt && (
+                      <p className="text-xs text-[#78909c] mt-1">
+                        Scheduled: {new Date(room.scheduledAt).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0 ml-2">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setCallRoom(room.url); }}
+                      className="text-xs bg-[#00695c] text-white px-3 py-1.5 rounded-full hover:bg-[#004d40] transition-colors font-medium"
+                    >
+                      Join Call
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteRoom.mutate({ id: room.id }); }}
+                      className="text-red-400 hover:text-red-600 p-1"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+

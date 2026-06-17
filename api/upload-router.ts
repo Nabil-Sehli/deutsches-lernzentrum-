@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createRouter, authedQuery, adminQuery } from "./middleware";
+import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { uploads } from "@db/schema";
 import { getPresignedUploadUrl } from "./lib/s3";
@@ -52,7 +52,7 @@ export const uploadRouter = createRouter({
       return getPresignedUploadUrl(key, input.contentType);
     }),
 
-  getUrl: adminQuery
+  getUrl: authedQuery
     .input(
       z.object({
         fileName: z.string().min(1),

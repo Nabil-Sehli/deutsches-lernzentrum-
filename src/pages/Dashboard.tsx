@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
+import { VideoCall } from "@/components/VideoCall";
 import {
   GraduationCap,
   PlayCircle,
@@ -36,6 +37,8 @@ import {
   Plus,
   MoreHorizontal,
   Trash2,
+  ExternalLink,
+  Video,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -63,6 +66,11 @@ export default function Dashboard() {
     redirectOnUnauthenticated: true,
   });
   const [redeemOpen, setRedeemOpen] = useState(false);
+  const [callRoom, setCallRoom] = useState<string | null>(null);
+  const { data: meetingRooms } = trpc.meetingRooms.listByCenter.useQuery(
+    { centerId: user?.centerId ?? 0 },
+    { enabled: !!user?.centerId }
+  );
 
   const form = useForm<RedeemInviteForm>({
     resolver: zodResolver(redeemInviteSchema),
@@ -130,7 +138,7 @@ export default function Dashboard() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-[#2c3e2d]">
-              {t("dashboard.greeting", { name: user.name ?? "Student" })}
+              {t("dashboard.greeting", { name: user.title ? `${user.title}. ${user.name ?? "Student"}` : (user.name ?? "Student") })}
             </h1>
             <p className="text-[#78909c] mt-1">
               {myCenter
@@ -207,23 +215,29 @@ export default function Dashboard() {
 
           {/* Center Info */}
           {myCenter && (
-            <Card className="clay-card border-0 mb-8 overflow-hidden">
-              {myCenter.banner && (
-                <div className="h-32 sm:h-40 w-full bg-[#00695c]/5">
+            <Card className="clay-card border-0 mb-8 overflow-hidden relative pt-0">
+              {myCenter.banner ? (
+                <div className="h-32 sm:h-44 w-full relative overflow-hidden">
                   <img
                     src={myCenter.banner}
                     alt=""
                     className="w-full h-full object-cover"
+                    style={{
+                      maskImage: "linear-gradient(to bottom, black 70%, transparent 100%)",
+                      WebkitMaskImage: "linear-gradient(to bottom, black 70%, transparent 100%)",
+                    }}
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = "none";
                     }}
                   />
                 </div>
+              ) : (
+                <div className="h-20 sm:h-24 w-full" style={{ backgroundColor: myCenter.themeColor ?? "#e8f5e9" }} />
               )}
-              <CardContent className="p-6">
-                <div className="flex items-start gap-5">
+              <CardContent className="px-6 pb-6 pt-0 relative">
+                <div className="flex items-end -mt-10 sm:-mt-12 gap-4 relative z-10">
                   {myCenter.logo ? (
-                    <div className="w-16 h-16 rounded-2xl bg-[#00695c]/8 flex items-center justify-center shrink-0 overflow-hidden">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-4 border-white shadow-xl shrink-0 bg-white">
                       <img
                         src={myCenter.logo}
                         alt={`${myCenter.name} logo`}
@@ -234,37 +248,52 @@ export default function Dashboard() {
                       />
                     </div>
                   ) : (
-                    <div className="w-16 h-16 rounded-2xl bg-[#00695c]/8 flex items-center justify-center shrink-0">
-                      <GraduationCap className="w-8 h-8 text-[#00695c]" />
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-4 border-white shadow-xl shrink-0 bg-white flex items-center justify-center">
+                      <GraduationCap className="w-8 h-8 sm:w-10 sm:h-10 text-[#00695c]" />
                     </div>
                   )}
-                  <div className="flex-1 min-w-0">
-                    <h2 className="text-xl font-bold text-[#2c3e2d]">
-                      {myCenter.name}
-                    </h2>
+                </div>
+                <div className="mt-3 sm:mt-4 flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-xl sm:text-2xl font-bold text-[#2c3e2d]">
+                        {myCenter.name}
+                      </h2>
+                      {myCenter.slug && (
+                        <Link
+                          to={`/c/${myCenter.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs font-medium text-[#00695c] hover:text-[#004d40] transition-colors bg-[#00695c]/8 px-2.5 py-1 rounded-full hover:bg-[#00695c]/15"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          View Page
+                        </Link>
+                      )}
+                    </div>
                     {myCenter.description && (
-                      <p className="text-sm text-[#78909c] mt-1.5 leading-relaxed">
+                      <p className="text-sm text-[#78909c] mt-1.5 leading-relaxed max-w-2xl">
                         {myCenter.description}
                       </p>
                     )}
-                    {(myCenter.address || myCenter.phone) && (
-                      <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-xs text-[#78909c]">
-                        {myCenter.address && (
-                          <span className="flex items-center gap-1.5">
-                            <MapPin className="w-3.5 h-3.5" />
-                            {myCenter.address}
-                          </span>
-                        )}
-                        {myCenter.phone && (
-                          <span className="flex items-center gap-1.5">
-                            <Phone className="w-3.5 h-3.5" />
-                            {myCenter.phone}
-                          </span>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
+                {(myCenter.address || myCenter.phone) && (
+                  <div className="flex flex-wrap gap-x-6 gap-y-2 mt-4 pt-4 border-t border-[#00695c]/8">
+                    {myCenter.address && (
+                      <span className="flex items-center gap-1.5 text-xs text-[#78909c]">
+                        <MapPin className="w-3.5 h-3.5 text-[#00695c]" />
+                        {myCenter.address}
+                      </span>
+                    )}
+                    {myCenter.phone && (
+                      <span className="flex items-center gap-1.5 text-xs text-[#78909c]">
+                        <Phone className="w-3.5 h-3.5 text-[#00695c]" />
+                        {myCenter.phone}
+                      </span>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -479,6 +508,40 @@ export default function Dashboard() {
             </>
           )}
 
+          {/* Meeting Rooms */}
+          {meetingRooms && meetingRooms.length > 0 && (
+            <div className="mt-12">
+              <VideoCall roomUrl={callRoom ?? ""} open={!!callRoom} onClose={() => setCallRoom(null)} />
+              <h2 className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2">
+                <Video className="w-5 h-5 text-[#00695c]" />
+                Meeting Rooms
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
+                {meetingRooms.map((room) => (
+                  <Card key={room.id} className="clay-card border-0">
+                    <CardContent className="p-5">
+                      <h3 className="font-semibold text-[#2c3e2d] mb-1">{room.name}</h3>
+                      {room.description && (
+                        <p className="text-sm text-[#78909c] mb-3">{room.description}</p>
+                      )}
+                      {room.scheduledAt && (
+                        <p className="text-xs text-[#78909c] mb-3">
+                          {new Date(room.scheduledAt).toLocaleString()}
+                        </p>
+                      )}
+                      <button
+                        onClick={() => setCallRoom(room.url)}
+                        className="text-sm bg-[#00695c] text-white px-4 py-1.5 rounded-full hover:bg-[#004d40] transition-colors font-medium"
+                      >
+                        Join Call
+                      </button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Chat */}
           {myCenter && <StudentChat />}
         </div>
@@ -518,7 +581,7 @@ function StudentChat() {
 
   useEffect(() => {
     if (isNearBottom.current) {
-      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" });
     }
   }, [messages]);
 
@@ -556,7 +619,7 @@ function StudentChat() {
     }
     setText("");
     isNearBottom.current = true;
-    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    setTimeout(() => chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" }), 50);
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {

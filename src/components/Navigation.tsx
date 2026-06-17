@@ -155,7 +155,7 @@ export default function Navigation() {
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#445E5D]/8">
                   <User className="w-4 h-4 text-[#445E5D]" />
                   <span className="text-sm font-medium text-[#445E5D]">
-                    {user?.name ?? "User"}
+                    {user?.title ? `${user.title}. ` : ""}{user?.name ?? "User"}
                   </span>
                 </div>
                 <button
