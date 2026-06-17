@@ -166,22 +166,87 @@ function DecorativeL({ size = 84 }: { size?: number }) {
           <stop offset="100%" stopColor="#d4a847" />
         </linearGradient>
         <filter id="shadowL">
-          <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#182E21" floodOpacity="0.15" />
+          <feDropShadow
+            dx="0"
+            dy="2"
+            stdDeviation="3"
+            floodColor="#182E21"
+            floodOpacity="0.15"
+          />
         </filter>
       </defs>
       <g filter="url(#shadowL)">
         <rect x="14" y="6" width="14" height="72" rx="3" fill="url(#goldL)" />
-        <rect x="8" y="3" width="26" height="6" rx="1.5" fill="url(#goldLightL)" />
-        <rect x="8" y="75" width="26" height="6" rx="1.5" fill="url(#goldLightL)" />
-        <path d="M28,66 L28,77 Q28,78 29,78 L58,78 Q60,78 60,76 L60,68 Q60,66 58,66 Z" fill="url(#goldL)" />
-        <rect x="58" y="75" width="6" height="6" rx="1.5" fill="url(#goldLightL)" />
-        <rect x="48" y="69" width="6" height="8" rx="1.5" fill="url(#goldLightL)" />
-        <rect x="17" y="10" width="2" height="64" rx="1" fill="#fff5d4" opacity="0.35" />
+        <rect
+          x="8"
+          y="3"
+          width="26"
+          height="6"
+          rx="1.5"
+          fill="url(#goldLightL)"
+        />
+        <rect
+          x="8"
+          y="75"
+          width="26"
+          height="6"
+          rx="1.5"
+          fill="url(#goldLightL)"
+        />
+        <path
+          d="M28,66 L28,77 Q28,78 29,78 L58,78 Q60,78 60,76 L60,68 Q60,66 58,66 Z"
+          fill="url(#goldL)"
+        />
+        <rect
+          x="58"
+          y="75"
+          width="6"
+          height="6"
+          rx="1.5"
+          fill="url(#goldLightL)"
+        />
+        <rect
+          x="48"
+          y="69"
+          width="6"
+          height="8"
+          rx="1.5"
+          fill="url(#goldLightL)"
+        />
+        <rect
+          x="17"
+          y="10"
+          width="2"
+          height="64"
+          rx="1"
+          fill="#fff5d4"
+          opacity="0.35"
+        />
       </g>
       <g opacity="0.75">
-        <path d="M36,70 C36,67 44,67 44,70 C44,73 36,73 36,70 Z" fill="none" stroke="#fff5d4" strokeWidth="0.6" />
-        <path d="M34,74 C34,71 46,71 46,74 C46,77 34,77 34,74 Z" fill="none" stroke="#f5d78a" strokeWidth="0.6" />
-        <ellipse cx="40" cy="72" rx="3.5" ry="1.6" fill="none" stroke="#b8862d" strokeWidth="0.5" opacity="0.5" transform="rotate(-10 40 72)" />
+        <path
+          d="M36,70 C36,67 44,67 44,70 C44,73 36,73 36,70 Z"
+          fill="none"
+          stroke="#fff5d4"
+          strokeWidth="0.6"
+        />
+        <path
+          d="M34,74 C34,71 46,71 46,74 C46,77 34,77 34,74 Z"
+          fill="none"
+          stroke="#f5d78a"
+          strokeWidth="0.6"
+        />
+        <ellipse
+          cx="40"
+          cy="72"
+          rx="3.5"
+          ry="1.6"
+          fill="none"
+          stroke="#b8862d"
+          strokeWidth="0.5"
+          opacity="0.5"
+          transform="rotate(-10 40 72)"
+        />
         <circle cx="38" cy="70" r="1" fill="#fff5d4" opacity="0.6" />
         <circle cx="38" cy="74" r="0.9" fill="#f5d78a" opacity="0.6" />
       </g>
@@ -209,7 +274,13 @@ function DecorativeZ({ size = 84 }: { size?: number }) {
           <stop offset="100%" stopColor="#d4a847" />
         </linearGradient>
         <filter id="shadowZ">
-          <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#182E21" floodOpacity="0.15" />
+          <feDropShadow
+            dx="0"
+            dy="2"
+            stdDeviation="3"
+            floodColor="#182E21"
+            floodOpacity="0.15"
+          />
         </filter>
       </defs>
       <g filter="url(#shadowZ)">
@@ -220,17 +291,80 @@ function DecorativeZ({ size = 84 }: { size?: number }) {
         <rect x="6" y="61" width="6" height="14" rx="1.5" fill="url(#goldZ)" />
         <rect x="58" y="61" width="6" height="14" rx="1.5" fill="url(#goldZ)" />
         <polygon points="62,22 50,22 10,62 22,62" fill="url(#goldZ)" />
-        <rect x="46" y="12" width="10" height="3" rx="1.5" fill="url(#goldLightZ)" />
-        <rect x="46" y="71" width="10" height="3" rx="1.5" fill="url(#goldLightZ)" />
-        <rect x="14" y="12" width="2" height="6" rx="1" fill="#fff5d4" opacity="0.35" />
-        <rect x="14" y="68" width="2" height="6" rx="1" fill="#fff5d4" opacity="0.35" />
-        <rect x="39" y="32" width="3" height="20" rx="1" fill="#fff5d4" opacity="0.25" transform="rotate(-40 40 42)" />
+        <rect
+          x="46"
+          y="12"
+          width="10"
+          height="3"
+          rx="1.5"
+          fill="url(#goldLightZ)"
+        />
+        <rect
+          x="46"
+          y="71"
+          width="10"
+          height="3"
+          rx="1.5"
+          fill="url(#goldLightZ)"
+        />
+        <rect
+          x="14"
+          y="12"
+          width="2"
+          height="6"
+          rx="1"
+          fill="#fff5d4"
+          opacity="0.35"
+        />
+        <rect
+          x="14"
+          y="68"
+          width="2"
+          height="6"
+          rx="1"
+          fill="#fff5d4"
+          opacity="0.35"
+        />
+        <rect
+          x="39"
+          y="32"
+          width="3"
+          height="20"
+          rx="1"
+          fill="#fff5d4"
+          opacity="0.25"
+          transform="rotate(-40 40 42)"
+        />
       </g>
       <g opacity="0.75">
-        <circle cx="32" cy="15" r="2" fill="none" stroke="#fff5d4" strokeWidth="0.5" />
-        <circle cx="48" cy="70" r="2" fill="none" stroke="#f5d78a" strokeWidth="0.5" />
+        <circle
+          cx="32"
+          cy="15"
+          r="2"
+          fill="none"
+          stroke="#fff5d4"
+          strokeWidth="0.5"
+        />
+        <circle
+          cx="48"
+          cy="70"
+          r="2"
+          fill="none"
+          stroke="#f5d78a"
+          strokeWidth="0.5"
+        />
         <circle cx="36" cy="42" r="1.5" fill="#fff5d4" opacity="0.6" />
-        <ellipse cx="50" cy="16" rx="4" ry="1.5" fill="none" stroke="#b8862d" strokeWidth="0.5" opacity="0.5" transform="rotate(90 50 16)" />
+        <ellipse
+          cx="50"
+          cy="16"
+          rx="4"
+          ry="1.5"
+          fill="none"
+          stroke="#b8862d"
+          strokeWidth="0.5"
+          opacity="0.5"
+          transform="rotate(90 50 16)"
+        />
         <circle cx="28" cy="62" r="1.5" fill="#f5d78a" opacity="0.6" />
       </g>
     </svg>
@@ -445,7 +579,10 @@ export default function Home() {
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (headingRef.current && !headingRef.current.contains(e.target as Node)) {
+      if (
+        headingRef.current &&
+        !headingRef.current.contains(e.target as Node)
+      ) {
         setActiveLetter(null);
       }
     };
@@ -474,7 +611,7 @@ export default function Home() {
               >
                 <div
                   className="cursor-pointer"
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
                     setActiveLetter(activeLetter === "D" ? null : "D");
                   }}
@@ -490,12 +627,17 @@ export default function Home() {
               </div>
               <div
                 className="absolute flex flex-col"
-                style={{ left: "-150px", top: "153px", gap: "18px", zIndex: 20 }}
+                style={{
+                  left: "-150px",
+                  top: "153px",
+                  gap: "18px",
+                  zIndex: 20,
+                }}
               >
                 <div className="relative">
                   <div
                     className="cursor-pointer"
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       setActiveLetter(activeLetter === "L" ? null : "L");
                     }}
@@ -512,7 +654,7 @@ export default function Home() {
                 <div className="relative">
                   <div
                     className="cursor-pointer"
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       setActiveLetter(activeLetter === "Z" ? null : "Z");
                     }}
@@ -965,7 +1107,13 @@ export default function Home() {
 
             {/* Pro */}
             <SectionReveal delay={0.1}>
-              <div className="p-8 h-full flex flex-col bg-[#445E5D] relative rounded-3xl" style={{ boxShadow: "0 4px 24px rgba(0, 105, 92, 0.08), 0 1px 4px rgba(0, 105, 92, 0.04)" }}>
+              <div
+                className="p-8 h-full flex flex-col bg-[#445E5D] relative rounded-3xl"
+                style={{
+                  boxShadow:
+                    "0 4px 24px rgba(0, 105, 92, 0.08), 0 1px 4px rgba(0, 105, 92, 0.04)",
+                }}
+              >
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#B1D4CD] text-[#182E21] text-[11px] font-semibold px-4 py-1 rounded-xl">
                   {t("home.planProPopular")}
                 </span>

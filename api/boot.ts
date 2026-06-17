@@ -14,9 +14,8 @@ import { findUserByEmail, createUser, updateLastSignIn } from "./queries/users";
 
 const app = new Hono<{ Bindings: HttpBindings }>();
 
-app.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));
-
-app.post("/api/dev-login", async (c) => {
+// bodyLimit only on dev-login route — not globally, to avoid conflicting with tRPC body parsing
+app.post("/api/dev-login", bodyLimit({ maxSize: 50 * 1024 * 1024 }), async (c) => {
   if (env.isProduction) {
     return c.json({ error: "Dev login only available in development" }, 403);
   }

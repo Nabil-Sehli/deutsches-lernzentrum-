@@ -9,6 +9,7 @@ import {
   json,
   bigint,
   index,
+  boolean,
 } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
@@ -52,9 +53,18 @@ export const centers = mysqlTable("centers", {
   phones: json("phones").$type<{ countryCode: string; number: string }[]>(),
   albumImages: json("albumImages").$type<string[]>(),
   themeColor: varchar("themeColor", { length: 7 }).default("#e8f5e9"),
+  plan: mysqlEnum("plan", ["free", "premium"]).default("free").notNull(),
+  videoUploadCount: int("videoUploadCount").default(0).notNull(),
+  videoUploadWeek: int("videoUploadWeek"),
   adminId: bigint("adminId", { mode: "number", unsigned: true }).notNull(),
   slug: varchar("slug", { length: 255 }).notNull().unique(),
   requestId: bigint("requestId", { mode: "number", unsigned: true }),
+  // Billing fields
+  stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 255 }),
+  nextBillingDate: timestamp("nextBillingDate"),
+  billingEmail: varchar("billingEmail", { length: 320 }),
+  planStartDate: timestamp("planStartDate"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")
     .defaultNow()
@@ -62,6 +72,7 @@ export const centers = mysqlTable("centers", {
     .$onUpdate(() => new Date()),
 }, (table) => ({
   adminIdIdx: index("centers_adminId_idx").on(table.adminId),
+  stripeCustomerIdIdx: index("centers_stripeCustomerId_idx").on(table.stripeCustomerId),
 }));
 
 export type Center = typeof centers.$inferSelect;
@@ -215,3 +226,98 @@ export const centerRequestDocuments = mysqlTable("center_request_documents", {
 
 export type CenterRequestDocument = typeof centerRequestDocuments.$inferSelect;
 export type InsertCenterRequestDocument = typeof centerRequestDocuments.$inferInsert;
+
+// API Keys table
+export const apiKeys = mysqlTable("api_keys", {
+  id: serial("id").primaryKey(),
+  centerId: bigint("centerId", { mode: "number", unsigned: true }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  key: varchar("key", { length: 255 }).notNull().unique(),
+  lastUsedAt: timestamp("lastUsedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  centerIdIdx: index("api_keys_centerId_idx").on(table.centerId),
+}));
+
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type InsertApiKey = typeof apiKeys.$inferInsert;
+
+// Webhooks table
+export const webhooks = mysqlTable("webhooks", {
+  id: serial("id").primaryKey(),
+  centerId: bigint("centerId", { mode: "number", unsigned: true }).notNull(),
+  url: varchar("url", { length: 512 }).notNull(),
+  events: json("events").$type<string[]>().notNull(), // ['student.enrolled', 'lesson.completed']
+  active: boolean("active").default(true).notNull(),
+  lastTriggeredAt: timestamp("lastTriggeredAt"),
+  lastFailureAt: timestamp("lastFailureAt"),
+  failureCount: int("failureCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  centerIdIdx: index("webhooks_centerId_idx").on(table.centerId),
+}));
+
+export type Webhook = typeof webhooks.$inferSelect;
+export type InsertWebhook = typeof webhooks.$inferInsert;
+
+// Webhook delivery logs
+export const webhookLogs = mysqlTable("webhook_logs", {
+  id: serial("id").primaryKey(),
+  webhookId: bigint("webhookId", { mode: "number", unsigned: true }).notNull(),
+  eventType: varchar("eventType", { length: 100 }).notNull(),
+  statusCode: int("statusCode"),
+  response: text("response"),
+  error: text("error"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  webhookIdIdx: index("webhook_logs_webhookId_idx").on(table.webhookId),
+  eventTypeIdx: index("webhook_logs_eventType_idx").on(table.eventType),
+}));
+
+export type WebhookLog = typeof webhookLogs.$inferSelect;
+export type InsertWebhookLog = typeof webhookLogs.$inferInsert;
+
+export const uploads = mysqlTable("uploads", {
+  id: serial("id").primaryKey(),
+  centerId: bigint("centerId", { mode: "number", unsigned: true }).notNull(),
+  fileName: varchar("fileName", { length: 512 }).notNull(),
+  fileSize: int("fileSize").notNull(),
+  contentType: varchar("contentType", { length: 100 }).notNull(),
+  category: mysqlEnum("category", ["image", "video", "document", "other"]).default("other").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  centerIdIdx: index("uploads_centerId_idx").on(table.centerId),
+}));
+
+export type Upload = typeof uploads.$inferSelect;
+export type InsertUpload = typeof uploads.$inferInsert;
+
+export const meetingRooms = mysqlTable("meeting_rooms", {
+  id: serial("id").primaryKey(),
+  centerId: bigint("centerId", { mode: "number", unsigned: true }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  url: varchar("url", { length: 512 }).notNull(),
+  scheduledAt: timestamp("scheduledAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  centerIdIdx: index("meeting_rooms_centerId_idx").on(table.centerId),
+}));
+
+export type MeetingRoom = typeof meetingRooms.$inferSelect;
+export type InsertMeetingRoom = typeof meetingRooms.$inferInsert;
+
+export const chatMessages = mysqlTable("chat_messages", {
+  id: serial("id").primaryKey(),
+  centerId: bigint("centerId", { mode: "number", unsigned: true }).notNull(),
+  userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+  message: text("message").notNull(),
+  imageUrl: varchar("imageUrl", { length: 1024 }),
+  reactions: json("reactions").default([]),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  centerIdIdx: index("chat_messages_centerId_idx").on(table.centerId),
+}));
+
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertChatMessage = typeof chatMessages.$inferInsert;

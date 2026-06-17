@@ -2,11 +2,11 @@ import { z } from "zod";
 import { createRouter, publicQuery, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import {
-  centers, users, lessons, inviteCodes,
+  centers, users, lessons, inviteCodes, questions, quizAttempts, uploads,
   centerRequestEmails, centerRequestLocations,
   centerRequestPhones, centerRequestAlbums,
 } from "@db/schema";
-import { eq, and, count } from "drizzle-orm";
+import { eq, and, count, inArray, gte, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 export const centerRouter = createRouter({
@@ -181,15 +181,11 @@ export const centerRouter = createRouter({
 
   myStudents: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
-    const [center] = await db
-      .select()
-      .from(centers)
-      .where(eq(centers.adminId, ctx.user.id));
-    if (!center) return [];
+    if (!ctx.user.centerId) return [];
     return db
       .select()
       .from(users)
-      .where(eq(users.centerId, center.id));
+      .where(eq(users.centerId, ctx.user.centerId));
   }),
 
   settings: authedQuery.query(async ({ ctx }) => {
@@ -235,6 +231,44 @@ export const centerRouter = createRouter({
       albumImages = rows.map((r) => r.imageUrl);
     }
 
+    const [studentCount] = await db
+      .select({ count: count() })
+      .from(users)
+      .where(and(eq(users.centerId, center.id), eq(users.role, "student")));
+
+    const [lessonCount] = await db
+      .select({ count: count() })
+      .from(lessons)
+      .where(eq(lessons.centerId, center.id));
+
+    // Get active students (logged in last 30 days)
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const [activeStudentCount] = await db
+      .select({ count: count() })
+      .from(users)
+      .where(
+        and(
+          eq(users.centerId, center.id),
+          eq(users.role, "student"),
+          gte(users.lastSignInAt, thirtyDaysAgo)
+        )
+      );
+
+    // Get quiz count
+    const [quizCount] = await db
+      .select({ count: count() })
+      .from(questions)
+      .where(inArray(questions.lessonId, 
+        db.select({ id: lessons.id }).from(lessons).where(eq(lessons.centerId, center.id))
+      ));
+
+    // Real storage usage from uploads table
+    const [storageResult] = await db
+      .select({ totalBytes: sql<number>`COALESCE(SUM(fileSize), 0)` })
+      .from(uploads)
+      .where(eq(uploads.centerId, center.id));
+    const storageUsedMB = Math.round((storageResult.totalBytes / (1024 * 1024)) * 100) / 100;
+
     return {
       id: center.id,
       name: center.name,
@@ -249,8 +283,65 @@ export const centerRouter = createRouter({
       phones,
       albumImages,
       themeColor: center.themeColor,
+      plan: center.plan,
+      videoUploadCount: center.videoUploadCount,
+      videoUploadWeek: center.videoUploadWeek,
+      studentCount: studentCount.count,
+      lessonCount: lessonCount.count,
+      // New usage analytics
+      usage: {
+        studentCount: studentCount.count,
+        activeStudents: activeStudentCount.count,
+        videoUploadCount: center.videoUploadCount,
+        videoUploadWeek: center.videoUploadWeek,
+        lessonsCreated: lessonCount.count,
+        quizzesCreated: quizCount.count,
+        storageUsedMB: storageUsedMB,
+      },
+      limits: {
+        maxStudents: center.plan === "premium" ? 999999 : 10,
+        maxVideosPerWeek: center.plan === "premium" ? 999999 : 1,
+        maxInviteCodes: center.plan === "premium" ? 999999 : 1,
+        maxStorageGB: center.plan === "premium" ? 100 : 5,
+      },
+      // Billing info
+      nextBillingDate: center.nextBillingDate,
+      planStartDate: center.planStartDate,
     };
   }),
+
+  delete: authedQuery
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const [center] = await db
+        .select()
+        .from(centers)
+        .where(eq(centers.id, input.id));
+      if (!center || center.adminId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized to delete this center" });
+      }
+
+      const lessonIds = (await db
+        .select({ id: lessons.id })
+        .from(lessons)
+        .where(eq(lessons.centerId, input.id)))
+        .map((r) => r.id);
+
+      if (lessonIds.length > 0) {
+        await db.delete(quizAttempts).where(inArray(quizAttempts.lessonId, lessonIds));
+        await db.delete(questions).where(inArray(questions.lessonId, lessonIds));
+      }
+      await db.delete(lessons).where(eq(lessons.centerId, input.id));
+      await db.delete(inviteCodes).where(eq(inviteCodes.centerId, input.id));
+      await db
+        .update(users)
+        .set({ centerId: null })
+        .where(eq(users.centerId, input.id));
+      await db.delete(centers).where(eq(centers.id, input.id));
+
+      return { success: true };
+    }),
 
   // saveSettings removed — use `update` instead
 });

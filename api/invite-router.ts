@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { createRouter, authedQuery } from "./middleware";
+import { createRouter, authedQuery, getCenterPlan, checkInviteLimit } from "./middleware";
 import { getDb } from "./queries/connection";
 import { inviteCodes, centers, users } from "@db/schema";
-import { eq } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 function generateCode(): string {
@@ -17,16 +17,12 @@ function generateCode(): string {
 export const inviteRouter = createRouter({
   list: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
-    const [center] = await db
-      .select()
-      .from(centers)
-      .where(eq(centers.adminId, ctx.user.id));
-    if (!center) return [];
+    if (!ctx.user.centerId) return [];
 
     const codes = await db
       .select()
       .from(inviteCodes)
-      .where(eq(inviteCodes.centerId, center.id));
+      .where(eq(inviteCodes.centerId, ctx.user.centerId));
 
     const results = [];
     for (const code of codes) {
@@ -45,11 +41,21 @@ export const inviteRouter = createRouter({
 
   create: authedQuery.mutation(async ({ ctx }) => {
     const db = getDb();
-    const [center] = await db
-      .select()
-      .from(centers)
-      .where(eq(centers.adminId, ctx.user.id));
-    if (!center) throw new TRPCError({ code: "NOT_FOUND", message: "You do not manage a center" });
+    if (!ctx.user.centerId) throw new TRPCError({ code: "NOT_FOUND", message: "You do not manage a center" });
+
+    const { plan } = await getCenterPlan(ctx.user.centerId);
+    if (plan === "free") {
+      const [existing] = await db
+        .select({ count: count() })
+        .from(inviteCodes)
+        .where(eq(inviteCodes.centerId, ctx.user.centerId));
+      if (existing.count >= 1) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Free plan limited to 1 invite code. Upgrade to Premium for unlimited codes.",
+        });
+      }
+    }
 
     let code = generateCode();
     let attempts = 0;
@@ -65,7 +71,7 @@ export const inviteRouter = createRouter({
 
     const [invite] = await db.insert(inviteCodes).values({
       code,
-      centerId: center.id,
+      centerId: ctx.user.centerId,
     });
     return { code, id: invite.insertId };
   }),
@@ -81,6 +87,8 @@ export const inviteRouter = createRouter({
 
       if (!invite) throw new TRPCError({ code: "NOT_FOUND", message: "Invalid invite code" });
       if (invite.usedBy) throw new TRPCError({ code: "CONFLICT", message: "This code has already been used" });
+
+      await checkInviteLimit(invite.centerId);
 
       await db
         .update(inviteCodes)

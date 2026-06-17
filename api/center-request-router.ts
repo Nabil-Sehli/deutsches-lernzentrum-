@@ -239,32 +239,41 @@ export const centerRequestRouter = createRouter({
         .where(eq(centers.slug, input.slug));
       if (!center) throw new TRPCError({ code: "NOT_FOUND", message: "Center not found" });
 
-      let teacher: { name: string | null; email: string; avatar: string | null; bio: string | null } | null = null;
+      let teacher: { name: string | null; email: string; avatar: string | null; bio: string | null; title: string | null } | null = null;
       let emails: { id: number; email: string }[] = [];
       let locations: { id: number; country: string; city: string; address: string }[] = [];
       let phones: { id: number; countryCode: string; number: string }[] = [];
       let albums: { id: number; imageUrl: string }[] = [];
 
-      if (center.requestId) {
-        const [request] = await db
-          .select()
-          .from(centerRequests)
-          .where(eq(centerRequests.id, center.requestId));
-        if (request && request.status === "approved") {
-          const [user] = await db
-            .select({ name: users.name, email: users.email, avatar: users.avatar, bio: users.bio })
-            .from(users)
-            .where(eq(users.id, center.adminId));
-          if (user) teacher = user;
-
-          [emails, locations, phones, albums] = await Promise.all([
-            db.select().from(centerRequestEmails).where(eq(centerRequestEmails.requestId, request.id)),
-            db.select().from(centerRequestLocations).where(eq(centerRequestLocations.requestId, request.id)),
-            db.select().from(centerRequestPhones).where(eq(centerRequestPhones.requestId, request.id)),
-            db.select().from(centerRequestAlbums).where(eq(centerRequestAlbums.requestId, request.id)),
-          ]);
-        }
+      if (center.emails) {
+        emails = center.emails.map((e, i) => ({ id: i, email: e.email }));
+      } else if (center.requestId) {
+        emails = await db.select().from(centerRequestEmails).where(eq(centerRequestEmails.requestId, center.requestId));
       }
+
+      if (center.locations) {
+        locations = center.locations.map((l, i) => ({ id: i, country: l.country, city: l.city, address: l.address }));
+      } else if (center.requestId) {
+        locations = await db.select().from(centerRequestLocations).where(eq(centerRequestLocations.requestId, center.requestId));
+      }
+
+      if (center.phones) {
+        phones = center.phones.map((p, i) => ({ id: i, countryCode: p.countryCode, number: p.number }));
+      } else if (center.requestId) {
+        phones = await db.select().from(centerRequestPhones).where(eq(centerRequestPhones.requestId, center.requestId));
+      }
+
+      if (center.albumImages) {
+        albums = center.albumImages.map((url, i) => ({ id: i, imageUrl: url }));
+      } else if (center.requestId) {
+        albums = await db.select().from(centerRequestAlbums).where(eq(centerRequestAlbums.requestId, center.requestId));
+      }
+
+      const [user] = await db
+        .select({ name: users.name, email: users.email, avatar: users.avatar, bio: users.bio, title: users.title })
+        .from(users)
+        .where(eq(users.id, center.adminId));
+      if (user) teacher = user;
 
       return {
         id: center.id,

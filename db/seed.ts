@@ -35,9 +35,31 @@ async function seed() {
       bio: "Experienced German language instructor with 10+ years of teaching.",
       lastSignInAt: new Date(),
     },
+    {
+      email: "dev-teacher@dev.local",
+      passwordHash: pwd,
+      name: "Dev Teacher",
+      role: "teacher",
+      title: "Mrs",
+      sex: "female",
+      city: "Berlin",
+      bio: "Development test teacher account.",
+      lastSignInAt: new Date(),
+    },
+    {
+      email: "dev-student@dev.local",
+      passwordHash: pwd,
+      name: "Dev Student",
+      role: "student",
+      sex: "male",
+      age: 25,
+      city: "Berlin",
+      lastSignInAt: new Date(),
+    },
   ]);
   const [teacher] = await db.select().from(users).where(eq(users.email, "teacher@example.com"));
-  if (!teacher) throw new Error("Failed to create teacher");
+  const [devTeacher] = await db.select().from(users).where(eq(users.email, "dev-teacher@dev.local"));
+  if (!teacher || !devTeacher) throw new Error("Failed to create teachers");
 
   await db.insert(users).values([
     {
@@ -80,13 +102,40 @@ async function seed() {
     phone: "+49 30 12345678",
     adminId: teacher.id,
     slug: "berlin-german-school",
+    themeColor: "#e8f5e9",
+    emails: [{ email: "info@berlin-german-school.de" }],
+    locations: [{ country: "Germany", city: "Berlin", address: "Friedrichstraße 100, 10117 Berlin" }],
+    phones: [{ countryCode: "49", number: "30 12345678" }],
+    albumImages: [],
   });
   const [center] = await db.select().from(centers).where(eq(centers.slug, "berlin-german-school"));
   if (!center) throw new Error("Failed to create center");
 
+  await db.insert(centers).values({
+    name: "Dev Test Center",
+    description: "A test center for development purposes. This center is used for testing all features including the public landing page.",
+    address: "Teststraße 1, 10115 Berlin",
+    phone: "+49 30 98765432",
+    adminId: devTeacher.id,
+    slug: "fefe-fefe",
+    plan: "free",
+    themeColor: "#e8f5e9",
+    emails: [{ email: "dev-center@dev.local" }],
+    locations: [{ country: "Germany", city: "Berlin", address: "Teststraße 1, 10115 Berlin" }],
+    phones: [{ countryCode: "49", number: "30 98765432" }],
+  });
+  const [devCenter] = await db.select().from(centers).where(eq(centers.slug, "fefe-fefe"));
+  if (!devCenter) throw new Error("Failed to create dev center");
+  await db.update(users).set({ centerId: devCenter.id }).where(eq(users.id, devTeacher.id));
+
   await db.update(users).set({ centerId: center.id }).where(eq(users.id, teacher.id));
   for (const student of students) {
     await db.update(users).set({ centerId: center.id }).where(eq(users.id, student.id));
+  }
+  // Assign dev student to dev center
+  const [devStudent] = await db.select().from(users).where(eq(users.email, "dev-student@dev.local"));
+  if (devStudent) {
+    await db.update(users).set({ centerId: devCenter.id }).where(eq(users.id, devStudent.id));
   }
 
   await db.insert(inviteCodes).values([
@@ -169,12 +218,30 @@ async function seed() {
     }
   }
 
+  await db.insert(inviteCodes).values([
+    { code: "TESTDEV1", centerId: devCenter.id },
+    { code: "TESTDEV2", centerId: devCenter.id },
+  ]);
+
+  await db.insert(lessons).values([
+    {
+      centerId: devCenter.id,
+      title: "Dev Lesson 1 - Test",
+      description: "A test lesson for the dev center.",
+      videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      order: 1,
+    },
+  ]);
+
   console.log("Seed complete.");
   console.log(`  Admin: admin@example.com / password123`);
   console.log(`  Teacher: teacher@example.com / password123`);
+  console.log(`  Dev Teacher: dev-teacher@dev.local / password123`);
+  console.log(`  Dev Student: dev-student@dev.local / password123`);
   console.log(`  Students: anna@example.com / password123`);
   console.log(`  Center: Berlin German School (slug: berlin-german-school)`);
-  console.log(`  Invite codes: BERLIN01, BERLIN02, BERLIN03`);
+  console.log(`  Dev Center: Dev Test Center (slug: fefe-fefe)`);
+  console.log(`  Invite codes: BERLIN01, BERLIN02, BERLIN03, TESTDEV1, TESTDEV2`);
   process.exit(0);
 }
 

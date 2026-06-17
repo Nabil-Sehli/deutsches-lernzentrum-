@@ -271,7 +271,7 @@ export default function CenterRequestForm({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isDE = i18n.language?.startsWith("de");
 
   const [submitted, setSubmitted] = useState(false);
@@ -329,6 +329,7 @@ export default function CenterRequestForm({
     const { uploadUrl, publicUrl } = await getUploadUrl.mutateAsync({
       fileName: file.name,
       contentType: file.type,
+      fileSize: file.size,
     });
     await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
     return publicUrl;
@@ -392,20 +393,19 @@ export default function CenterRequestForm({
               <Building2 className="w-8 h-8 text-[#182E21]" />
             </div>
             <DialogTitle className="text-2xl text-[#2c3e2d]">
-              Request Submitted!
+              {t("registerCenter.submittedTitle")}
             </DialogTitle>
             <DialogDescription className="text-[#78909c] text-base">
-              Thank you for your center registration request. Our team will review
-              your application and get back to you within 24&ndash;48 hours.
+              {t("registerCenter.submittedDesc")}
             </DialogDescription>
             <p className="text-xs text-[#78909c]">
-              Your page will be at: /c/{watch("slug")}
+              {t("registerCenter.yourPageAt")} /c/{watch("slug")}
             </p>
             <Button
               onClick={() => { setSubmitted(false); onOpenChange(false); form.reset(); }}
-              className="rounded-full bg-[#00695c] hover:bg-[#004d40] font-semibold mt-2"
+              className="rounded-full bg-[#00695c] hover:bg-[#004d40] font-semibold"
             >
-              Done
+              {t("registerCenter.done")}
             </Button>
           </div>
         </DialogContent>
@@ -422,14 +422,14 @@ export default function CenterRequestForm({
         <DialogContent className="rounded-3xl border-0 shadow-xl max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl text-[#2c3e2d]">
-              Request a New Learning Center
+              {t("registerCenter.dialogTitle")}
             </DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 pt-2">
             {/* Logo */}
             <section className="space-y-3">
-              <Label className="text-sm font-medium text-[#2c3e2d]">Center Logo</Label>
+              <Label className="text-sm font-medium text-[#2c3e2d]">{t("registerCenter.centerLogo")}</Label>
               <div className="flex items-center gap-4">
                 <input
                   ref={hiddenLogoInput}
@@ -450,24 +450,13 @@ export default function CenterRequestForm({
                   ) : (
                     <Upload className="w-4 h-4 mr-2" />
                   )}
-                  Upload Logo
+                  {t("registerCenter.uploadLogo")}
                 </Button>
-                {logoVal && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setValue("logo", null)}
-                    className="text-red-500"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
+                <p className="text-xs text-[#78909c]">{t("registerCenter.supportedImages")}</p>
               </div>
-              <p className="text-xs text-[#78909c]">Supported: JPG, PNG, WebP</p>
               {logoVal && (
                 <div className="w-24 h-24 rounded-2xl overflow-hidden border border-[#00695c]/10">
-                  <img src={logoVal} alt="logo" className="w-full h-full object-cover" />
+                  <img src={logoVal} alt={t("registerCenter.altLogo")} className="w-full h-full object-cover" />
                 </div>
               )}
             </section>
@@ -475,47 +464,47 @@ export default function CenterRequestForm({
             {/* Center Name */}
             <section className="space-y-3">
               <Label className="text-sm font-medium text-[#2c3e2d]">
-                Center Name <span className="text-red-500">*</span>
+                {t("registerCenter.centerName")} <span className="text-red-500">*</span>
               </Label>
               <Input
                 {...register("centerName")}
-                placeholder="e.g. Berlin German Language School"
+                placeholder={t("registerCenter.centerNamePlaceholder")}
                 className="rounded-xl h-11 border-[#00695c]/15"
               />
               {errors.centerName && (
-                <p className="text-sm text-red-500">{errors.centerName.message}</p>
+                <p className="text-sm text-red-500">{t("registerCenter.errorCenterName")}</p>
               )}
             </section>
 
             {/* URL Slug */}
             <section className="space-y-3">
               <Label className="text-sm font-medium text-[#2c3e2d]">
-                Website URL <span className="text-red-500">*</span>
+                {t("registerCenter.websiteUrl")} <span className="text-red-500">*</span>
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#78909c] pointer-events-none">
-                  /c/
+                  {t("registerCenter.urlPrefix")}
                 </span>
                 <Input
                   {...register("slug")}
-                  placeholder="my-language-school"
+                  placeholder={t("registerCenter.urlPlaceholder")}
                   className="rounded-xl h-11 border-[#00695c]/15 pl-10"
                 />
               </div>
               <p className="text-xs text-[#78909c]">
-                Your public page will be at: yourdomain.com/c/{watch("slug") || "your-slug"}
+                {t("registerCenter.publicPageAt")} yourdomain.com/c/{watch("slug") || t("registerCenter.yourSlug")}
               </p>
               {errors.slug && (
-                <p className="text-sm text-red-500">{errors.slug.message}</p>
+                <p className="text-sm text-red-500">{errors.slug.message?.includes("Only lowercase") ? t("registerCenter.errorSlugFormat") : t("registerCenter.errorSlugRequired")}</p>
               )}
             </section>
 
             {/* Bio */}
             <section className="space-y-3">
-              <Label className="text-sm font-medium text-[#2c3e2d]">Center Bio</Label>
+              <Label className="text-sm font-medium text-[#2c3e2d]">{t("registerCenter.centerBio")}</Label>
               <Textarea
                 {...register("centerBio")}
-                placeholder="Tell us about your center..."
+                placeholder={t("registerCenter.centerBioPlaceholder")}
                 className="rounded-xl min-h-[100px] border-[#00695c]/15"
               />
             </section>
@@ -524,7 +513,7 @@ export default function CenterRequestForm({
             <section className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium text-[#2c3e2d]">
-                  Contact Emails <span className="text-red-500">*</span>
+                  {t("registerCenter.contactEmails")} <span className="text-red-500">*</span>
                 </Label>
                 <Button
                   type="button"
@@ -533,7 +522,7 @@ export default function CenterRequestForm({
                   onClick={() => emailFields.append({ email: "" })}
                   className="rounded-full border-[#00695c]/15 text-xs h-8"
                 >
-                  <Plus className="w-3 h-3 mr-1" /> Add Email
+                  <Plus className="w-3 h-3 mr-1" /> {t("registerCenter.addEmail")}
                 </Button>
               </div>
               <div className="space-y-2">
@@ -541,7 +530,7 @@ export default function CenterRequestForm({
                   <div key={field.id} className="flex items-center gap-2">
                     <Input
                       {...register(`emails.${i}.email`)}
-                      placeholder="email@example.com"
+                      placeholder={t("registerCenter.emailPlaceholder")}
                       className="rounded-xl h-11 border-[#00695c]/15 flex-1"
                     />
                     {emailFields.fields.length > 1 && (
@@ -557,7 +546,7 @@ export default function CenterRequestForm({
                 ))}
               </div>
               {errors.emails && (
-                <p className="text-sm text-red-500">{errors.emails.message ?? errors.emails.root?.message}</p>
+                <p className="text-sm text-red-500">{t("registerCenter.errorEmailRequired")}</p>
               )}
             </section>
 
@@ -565,7 +554,7 @@ export default function CenterRequestForm({
             <section className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium text-[#2c3e2d]">
-                  Locations <span className="text-red-500">*</span>
+                  {t("registerCenter.locations")} <span className="text-red-500">*</span>
                 </Label>
                 <Button
                   type="button"
@@ -574,14 +563,14 @@ export default function CenterRequestForm({
                   onClick={() => locationFields.append({ country: "", city: "", address: "" })}
                   className="rounded-full border-[#00695c]/15 text-xs h-8"
                 >
-                  <Plus className="w-3 h-3 mr-1" /> Add Location
+                  <Plus className="w-3 h-3 mr-1" /> {t("registerCenter.addLocation")}
                 </Button>
               </div>
               <div className="space-y-4">
                 {locationFields.fields.map((field, i) => (
                   <div key={field.id} className="p-4 rounded-2xl border border-[#00695c]/10 bg-[#00695c]/3 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-[#78909c]">Location {i + 1}</span>
+                      <span className="text-xs font-medium text-[#78909c]">{t("registerCenter.locationLabel")} {i + 1}</span>
                       {locationFields.fields.length > 1 && (
                         <button
                           type="button"
@@ -594,14 +583,14 @@ export default function CenterRequestForm({
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
-                        <Label className="text-xs text-[#78909c]">Country</Label>
+                        <Label className="text-xs text-[#78909c]">{t("registerCenter.country")}</Label>
                         <div className="relative mt-1">
                           <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78909c] pointer-events-none" />
                           <select
                             {...register(`locations.${i}.country`)}
                             className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white pl-10 pr-10 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#00695c] appearance-none cursor-pointer"
                           >
-                            <option value="" disabled>Country</option>
+                            <option value="" disabled>{t("registerCenter.country")}</option>
                             {countries.map((c) => (
                               <option key={c.name} value={c.name}>
                                 {c.flag} {c.name}
@@ -612,21 +601,21 @@ export default function CenterRequestForm({
                         </div>
                       </div>
                       <div>
-                        <Label className="text-xs text-[#78909c]">City</Label>
+                        <Label className="text-xs text-[#78909c]">{t("registerCenter.city")}</Label>
                         <div className="relative mt-1">
                           <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78909c] pointer-events-none" />
                           <Input
                             {...register(`locations.${i}.city`)}
-                            placeholder="City"
+                            placeholder={t("registerCenter.cityPlaceholder")}
                             className="rounded-xl h-11 border-[#00695c]/15 pl-10"
                           />
                         </div>
                       </div>
                       <div>
-                        <Label className="text-xs text-[#78909c]">Address</Label>
+                        <Label className="text-xs text-[#78909c]">{t("registerCenter.address")}</Label>
                         <Input
                           {...register(`locations.${i}.address`)}
-                          placeholder="Address"
+                          placeholder={t("registerCenter.addressPlaceholder")}
                           className="rounded-xl h-11 border-[#00695c]/15 mt-1"
                         />
                       </div>
@@ -635,7 +624,7 @@ export default function CenterRequestForm({
                 ))}
               </div>
               {errors.locations && (
-                <p className="text-sm text-red-500">{errors.locations.message ?? errors.locations.root?.message}</p>
+                <p className="text-sm text-red-500">{t("registerCenter.errorLocationRequired")}</p>
               )}
             </section>
 
@@ -643,7 +632,7 @@ export default function CenterRequestForm({
             <section className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium text-[#2c3e2d]">
-                  Phone Numbers <span className="text-red-500">*</span>
+                  {t("registerCenter.phoneNumbers")} <span className="text-red-500">*</span>
                 </Label>
                 <Button
                   type="button"
@@ -652,7 +641,7 @@ export default function CenterRequestForm({
                   onClick={() => phoneFields.append({ countryCode: "49", number: "" })}
                   className="rounded-full border-[#00695c]/15 text-xs h-8"
                 >
-                  <Plus className="w-3 h-3 mr-1" /> Add Phone
+                  <Plus className="w-3 h-3 mr-1" /> {t("registerCenter.addPhone")}
                 </Button>
               </div>
               <div className="space-y-2">
@@ -667,7 +656,7 @@ export default function CenterRequestForm({
                           {(() => {
                             const code = phonesVal?.[i]?.countryCode;
                             const country = [...countries].find((c) => c.dial === code);
-                            return country ? `${country.flag} +${country.dial}` : "Select";
+                            return country ? `${country.flag} +${country.dial}` : t("registerCenter.selectCountry");
                           })()}
                         </SelectValue>
                       </SelectTrigger>
@@ -681,7 +670,12 @@ export default function CenterRequestForm({
                     </Select>
                     <Input
                       {...register(`phones.${i}.number`)}
-                      placeholder="Phone number"
+                      placeholder={t("registerCenter.phonePlaceholder")}
+                      inputMode="numeric"
+                      onInput={(e) => {
+                        const target = e.currentTarget;
+                        target.value = target.value.replace(/\D/g, "");
+                      }}
                       className="rounded-xl h-11 border-[#00695c]/15 flex-1"
                     />
                     {phoneFields.fields.length > 1 && (
@@ -697,13 +691,13 @@ export default function CenterRequestForm({
                 ))}
               </div>
               {errors.phones && (
-                <p className="text-sm text-red-500">{errors.phones.message ?? errors.phones.root?.message}</p>
+                <p className="text-sm text-red-500">{t("registerCenter.errorPhoneRequired")}</p>
               )}
             </section>
 
-            {/* Album */}
+            {/* Photo Album */}
             <section className="space-y-3">
-              <Label className="text-sm font-medium text-[#2c3e2d]">Photo Album</Label>
+              <Label className="text-sm font-medium text-[#2c3e2d]">{t("registerCenter.photoAlbum")}</Label>
               <input
                 ref={hiddenAlbumInput}
                 type="file"
@@ -724,9 +718,9 @@ export default function CenterRequestForm({
                 ) : (
                   <Upload className="w-4 h-4 mr-2" />
                 )}
-                Upload Photos
+                {t("registerCenter.uploadPhotos")}
               </Button>
-              <p className="text-xs text-[#78909c]">Supported: JPG, PNG, WebP</p>
+              <p className="text-xs text-[#78909c]">{t("registerCenter.supportedImages")}</p>
               {albumVal.length > 0 && (
                 <div className="grid grid-cols-4 gap-2">
                   {albumVal.map((url, i) => (
@@ -750,8 +744,11 @@ export default function CenterRequestForm({
             {/* Documents */}
             <section className="space-y-3">
               <Label className="text-sm font-medium text-[#2c3e2d]">
-                Bank &amp; Tax Documents
+                {t("registerCenter.businessRegistration")}
               </Label>
+              <p className="text-sm text-red-500 font-medium">
+                {t("registerCenter.businessRegistrationHint")}
+              </p>
               <input
                 ref={hiddenDocInput}
                 type="file"
@@ -772,15 +769,15 @@ export default function CenterRequestForm({
                 ) : (
                   <Upload className="w-4 h-4 mr-2" />
                 )}
-                Upload Documents
+                {t("registerCenter.uploadDocuments")}
               </Button>
-              <p className="text-xs text-[#78909c]">Supported: PDF, JPG, PNG</p>
+              <p className="text-xs text-[#78909c]">{t("registerCenter.supportedDocs")}</p>
               {docVal.length > 0 && (
                 <div className="space-y-2">
                   {docVal.map((doc, i) => (
                     <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-[#00695c]/5 border border-[#00695c]/10">
                       <span className="text-sm text-[#2c3e2d] truncate flex-1">
-                        Document {i + 1}{doc.type ? `.${doc.type}` : ""}
+                        {t("registerCenter.documentLabel")} {i + 1}{doc.type ? `.${doc.type}` : ""}
                       </span>
                       <button
                         type="button"
@@ -805,20 +802,19 @@ export default function CenterRequestForm({
                   className="mt-1"
                 />
                 <Label htmlFor="terms" className="text-sm text-[#78909c] leading-relaxed flex-1">
-                  I confirm that the information provided is accurate and I agree to the
-                  terms and conditions for operating a German learning center.
+                  {t("registerCenter.termsLabel")}
                 </Label>
                 <button
                   type="button"
                   onClick={() => setTermsOpen(true)}
                   className="shrink-0 w-6 h-6 rounded-full bg-[#00695c]/10 flex items-center justify-center hover:bg-[#00695c]/20 transition-colors"
-                  title="Read Terms of Service"
+                  title={t("registerCenter.readTerms")}
                 >
                   <Info className="w-3.5 h-3.5 text-[#00695c]" />
                 </button>
               </div>
               {errors.acceptedTerms && (
-                <p className="text-sm text-red-500 pl-8">{errors.acceptedTerms.message}</p>
+                <p className="text-sm text-red-500 pl-8">{t("registerCenter.errorTermsRequired")}</p>
               )}
             </section>
 
@@ -832,20 +828,19 @@ export default function CenterRequestForm({
                   className="mt-1"
                 />
                 <Label htmlFor="privacy" className="text-sm text-[#78909c] leading-relaxed flex-1">
-                  I have read and accept the Privacy Policy regarding the processing
-                  of my personal data.
+                  {t("registerCenter.privacyLabel")}
                 </Label>
                 <button
                   type="button"
                   onClick={() => setPrivacyOpen(true)}
                   className="shrink-0 w-6 h-6 rounded-full bg-[#00695c]/10 flex items-center justify-center hover:bg-[#00695c]/20 transition-colors"
-                  title="Read Privacy Policy"
+                  title={t("registerCenter.readPrivacy")}
                 >
                   <Info className="w-3.5 h-3.5 text-[#00695c]" />
                 </button>
               </div>
               {errors.acceptedPrivacy && (
-                <p className="text-sm text-red-500 pl-8">{errors.acceptedPrivacy.message}</p>
+                <p className="text-sm text-red-500 pl-8">{t("registerCenter.errorPrivacyRequired")}</p>
               )}
             </section>
 
@@ -861,10 +856,10 @@ export default function CenterRequestForm({
               {submitMutation.isPending ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Submitting...
+                  {t("registerCenter.submitting")}
                 </>
               ) : (
-                "Submit Request"
+                t("registerCenter.submitRequest")
               )}
             </Button>
           </form>
@@ -876,7 +871,7 @@ export default function CenterRequestForm({
         <DialogContent className="rounded-3xl border-0 shadow-xl max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-lg text-[#2c3e2d]">
-              {isDE ? "Allgemeine Nutzungsbedingungen" : "Terms of Service"}
+              {t("registerCenter.termsOfService")}
             </DialogTitle>
           </DialogHeader>
           <div className="text-sm text-[#2c3e2d] whitespace-pre-line leading-relaxed space-y-2">
@@ -890,7 +885,7 @@ export default function CenterRequestForm({
         <DialogContent className="rounded-3xl border-0 shadow-xl max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-lg text-[#2c3e2d]">
-              {isDE ? "Datenschutzerklärung" : "Privacy Policy"}
+              {t("registerCenter.privacyPolicy")}
             </DialogTitle>
           </DialogHeader>
           <div className="text-sm text-[#2c3e2d] whitespace-pre-line leading-relaxed space-y-2">

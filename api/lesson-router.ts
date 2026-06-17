@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { createRouter, publicQuery, authedQuery } from "./middleware";
+import { createRouter, publicQuery, authedQuery, checkVideoUploadLimit, incrementVideoUploadCount } from "./middleware";
 import { getDb } from "./queries/connection";
-import { lessons, centers, questions, quizAttempts } from "@db/schema";
+import { lessons, questions, quizAttempts } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
@@ -35,19 +35,11 @@ export const lessonRouter = createRouter({
 
   myLessons: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
-    let centerId = ctx.user.centerId;
-    if (!centerId) {
-      const [center] = await db
-        .select()
-        .from(centers)
-        .where(eq(centers.adminId, ctx.user.id));
-      if (!center) return [];
-      centerId = center.id;
-    }
+    if (!ctx.user.centerId) return [];
     return db
       .select()
       .from(lessons)
-      .where(eq(lessons.centerId, centerId))
+      .where(eq(lessons.centerId, ctx.user.centerId))
       .orderBy(lessons.order);
   }),
 
@@ -62,20 +54,22 @@ export const lessonRouter = createRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
-      const [center] = await db
-        .select()
-        .from(centers)
-        .where(eq(centers.adminId, ctx.user.id));
-      if (!center) throw new TRPCError({ code: "NOT_FOUND", message: "You do not manage a center" });
+      if (!ctx.user.centerId) throw new TRPCError({ code: "NOT_FOUND", message: "You do not manage a center" });
 
-      const [lesson] = await db.insert(lessons).values({
-        centerId: center.id,
-        title: input.title,
-        description: input.description ?? "",
-        videoUrl: input.videoUrl,
-        order: input.order,
-      });
-      return lesson;
+      await checkVideoUploadLimit(ctx.user.centerId);
+
+      try {
+        const [lesson] = await db.insert(lessons).values({
+          centerId: ctx.user.centerId,
+          title: input.title,
+          description: input.description ?? "",
+          videoUrl: input.videoUrl,
+          order: input.order,
+        });
+        return lesson;
+      } finally {
+        await incrementVideoUploadCount(ctx.user.centerId);
+      }
     }),
 
   update: authedQuery
@@ -96,11 +90,7 @@ export const lessonRouter = createRouter({
         .where(eq(lessons.id, input.id));
       if (!lesson) throw new TRPCError({ code: "NOT_FOUND", message: "Lesson not found" });
 
-      const [center] = await db
-        .select()
-        .from(centers)
-        .where(eq(centers.adminId, ctx.user.id));
-      if (!center || center.id !== lesson.centerId) {
+      if (ctx.user.centerId !== lesson.centerId) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized to edit this lesson" });
       }
 
@@ -126,11 +116,7 @@ export const lessonRouter = createRouter({
         .where(eq(lessons.id, input.id));
       if (!lesson) throw new TRPCError({ code: "NOT_FOUND", message: "Lesson not found" });
 
-      const [center] = await db
-        .select()
-        .from(centers)
-        .where(eq(centers.adminId, ctx.user.id));
-      if (!center || center.id !== lesson.centerId) {
+      if (ctx.user.centerId !== lesson.centerId) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized to delete this lesson" });
       }
 

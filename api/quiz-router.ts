@@ -119,17 +119,12 @@ export const quizRouter = createRouter({
 
   centerAnalytics: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
-    const { centers } = await import("@db/schema");
-    const [center] = await db
-      .select()
-      .from(centers)
-      .where(eq(centers.adminId, ctx.user.id));
-    if (!center) return null;
+    if (!ctx.user.centerId) return null;
 
     const centerLessons = await db
       .select()
       .from(lessons)
-      .where(eq(lessons.centerId, center.id));
+      .where(eq(lessons.centerId, ctx.user.centerId));
 
     const allAttempts = [];
     for (const lesson of centerLessons) {

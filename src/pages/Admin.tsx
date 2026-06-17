@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import Navigation from "@/components/Navigation";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,6 +18,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -46,10 +63,15 @@ import {
   Save,
   Upload,
   Image,
+  Film,
   X,
   Globe,
   MapPin,
   ChevronDown,
+  Video,
+  MessageSquare,
+  Send,
+  MoreHorizontal,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -85,6 +107,9 @@ function CreateLessonDialog({
 }) {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
+  const getUploadUrl = trpc.upload.getUrl.useMutation();
+  const [videoSource, setVideoSource] = useState<"url" | "upload">("url");
+  const [videoUploading, setVideoUploading] = useState(false);
   const form = useForm<CreateLessonForm>({
     resolver: zodResolver(createLessonSchema),
     defaultValues: {
@@ -93,6 +118,29 @@ function CreateLessonDialog({
       videoUrl: "",
     },
   });
+
+  const handleVideoUpload = async (file: File) => {
+    setVideoUploading(true);
+    try {
+      const { uploadUrl, publicUrl } = await getUploadUrl.mutateAsync({
+        fileName: file.name,
+        contentType: file.type,
+        fileSize: file.size,
+      });
+      const res = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+      if (!res.ok) throw new Error(`Upload failed (${res.status})`);
+      form.setValue("videoUrl", publicUrl);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Upload failed";
+      alert(msg);
+    } finally {
+      setVideoUploading(false);
+    }
+  };
 
   const mutation = trpc.lesson.create.useMutation({
     onSuccess: () => {
@@ -158,12 +206,83 @@ function CreateLessonDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("admin.videoUrlLabel")}</FormLabel>
+                  <div className="flex items-center gap-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setVideoSource("url")}
+                      className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+                        videoSource === "url"
+                          ? "bg-[#00695c] text-white"
+                          : "bg-[#00695c]/10 text-[#00695c] hover:bg-[#00695c]/20"
+                      }`}
+                    >
+                      YouTube URL
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setVideoSource("upload")}
+                      className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+                        videoSource === "upload"
+                          ? "bg-[#00695c] text-white"
+                          : "bg-[#00695c]/10 text-[#00695c] hover:bg-[#00695c]/20"
+                      }`}
+                    >
+                      Upload Video
+                    </button>
+                  </div>
                   <FormControl>
-                    <Input
-                      placeholder={t("admin.videoUrlPlaceholder")}
-                      className="rounded-xl h-11 border-[#00695c]/15"
-                      {...field}
-                    />
+                    {videoSource === "url" ? (
+                      <Input
+                        placeholder={t("admin.videoUrlPlaceholder")}
+                        className="rounded-xl h-11 border-[#00695c]/15"
+                        {...field}
+                      />
+                    ) : (
+                      <div className="space-y-2">
+                        <label className="flex items-center justify-center h-24 rounded-xl border-2 border-dashed border-[#00695c]/20 cursor-pointer hover:border-[#00695c]/40 transition-colors bg-[#00695c]/5">
+                          <input
+                            type="file"
+                            accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                            className="hidden"
+                            disabled={videoUploading}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleVideoUpload(file);
+                            }}
+                          />
+                          <div className="text-center">
+                            {videoUploading ? (
+                              <Loader2 className="w-6 h-6 animate-spin text-[#00695c] mx-auto" />
+                            ) : field.value ? (
+                              <div className="text-[#00695c] text-sm">
+                                <Film className="w-6 h-6 mx-auto mb-1" />
+                                Video uploaded
+                              </div>
+                            ) : (
+                              <div className="text-[#78909c] text-sm">
+                                <Upload className="w-6 h-6 mx-auto mb-1" />
+                                Click to upload MP4/WebM
+                              </div>
+                            )}
+                          </div>
+                        </label>
+                        {field.value && (
+                          <div className="flex items-start gap-2 text-xs text-[#78909c] max-w-full">
+                            <span className="break-all min-w-0 flex-1">{field.value.split("/").pop()}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                form.setValue("videoUrl", "");
+                                setVideoSource("url");
+                              }}
+                              className="text-red-500 hover:underline"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -497,6 +616,20 @@ export default function Admin() {
                 {t("admin.tabAnalytics")}
               </TabsTrigger>
               <TabsTrigger
+                value="meetingRooms"
+                className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
+              >
+                <Video className="w-4 h-4 mr-2" />
+                {t("admin.tabMeetingRooms")}
+              </TabsTrigger>
+              <TabsTrigger
+                value="chat"
+                className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
+              >
+                <MessageSquare className="w-4 h-4 mr-2" />
+                {t("admin.tabChat")}
+              </TabsTrigger>
+              <TabsTrigger
                 value="settings"
                 className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
               >
@@ -804,6 +937,16 @@ export default function Admin() {
               )}
             </TabsContent>
 
+            {/* Meeting Rooms Tab */}
+            <TabsContent value="meetingRooms">
+              <MeetingRoomsPanel />
+            </TabsContent>
+
+            {/* Chat Tab */}
+            <TabsContent value="chat">
+              <ChatPanel />
+            </TabsContent>
+
             {/* Settings Tab */}
             <TabsContent value="settings">
               <h2 className="text-lg font-semibold text-[#2c3e2d] mb-4">
@@ -849,6 +992,7 @@ export default function Admin() {
 
 function CenterSettingsForm({ centerId }: { centerId: number }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const utils = trpc.useUtils();
   const { data: settings, isLoading } = trpc.center.settings.useQuery();
 
@@ -868,6 +1012,19 @@ function CenterSettingsForm({ centerId }: { centerId: number }) {
   const [albumImages, setAlbumImages] = useState<string[]>([]);
   const [themeColor, setThemeColor] = useState("#e8f5e9");
   const [uploading, setUploading] = useState<"logo" | "banner" | "album" | null>(null);
+
+  // Validation helpers
+  const validateEmail = (email: string) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  };
+
+  const validatePhone = (number: string) => {
+    return /^\d{7,15}$/.test(number.replace(/\D/g, ""));
+  };
+
+  const [emailErrors, setEmailErrors] = useState<{ [key: number]: boolean }>({});
+  const [phoneErrors, setPhoneErrors] = useState<{ [key: number]: boolean }>({});
 
   useEffect(() => {
     if (settings) {
@@ -905,6 +1062,25 @@ function CenterSettingsForm({ centerId }: { centerId: number }) {
   });
 
   const getUploadUrl = trpc.upload.getUrl.useMutation();
+  const deleteMutation = trpc.center.delete.useMutation({
+    onSuccess: () => {
+      navigate("/");
+    },
+  });
+
+  const upgradeMutation = trpc.billing.simulateUpgrade.useMutation({
+    onSuccess: () => {
+      utils.center.settings.invalidate();
+      utils.center.dashboardStats.invalidate();
+    },
+  });
+
+  const downgradeMutation = trpc.billing.simulateDowngrade.useMutation({
+    onSuccess: () => {
+      utils.center.settings.invalidate();
+      utils.center.dashboardStats.invalidate();
+    },
+  });
 
   const handleImageUpload = async (field: "logo" | "banner", file: File) => {
     setUploading(field);
@@ -912,6 +1088,7 @@ function CenterSettingsForm({ centerId }: { centerId: number }) {
       const { uploadUrl, publicUrl } = await getUploadUrl.mutateAsync({
         fileName: file.name,
         contentType: file.type,
+        fileSize: file.size,
       });
       const res = await fetch(uploadUrl, {
         method: "PUT",
@@ -939,6 +1116,7 @@ function CenterSettingsForm({ centerId }: { centerId: number }) {
           const { uploadUrl, publicUrl } = await getUploadUrl.mutateAsync({
             fileName: file.name,
             contentType: file.type,
+            fileSize: file.size,
           });
           await fetch(uploadUrl, {
             method: "PUT",
@@ -1046,6 +1224,7 @@ function CenterSettingsForm({ centerId }: { centerId: number }) {
         <Card className="clay-card border-0">
           <CardContent className="p-6 space-y-4">
             <label className="text-sm font-medium text-[#2c3e2d]">{t("admin.bannerLabel")}</label>
+            <p className="text-xs text-[#78909c]">{t("admin.bannerRecommended")}</p>
             <div className="flex items-center gap-3">
               <Button
                 type="button"
@@ -1134,31 +1313,44 @@ function CenterSettingsForm({ centerId }: { centerId: number }) {
               <Plus className="w-3 h-3 mr-1" /> {t("admin.addEmail")}
             </Button>
           </div>
-          <div className="space-y-2">
-            {emails.map((entry, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <Input
-                  value={entry.email}
-                  onChange={(e) => {
-                    const next = [...emails];
-                    next[i] = { email: e.target.value };
-                    setEmails(next);
-                  }}
-                  placeholder="email@example.com"
-                  className="rounded-xl h-11 border-[#00695c]/15 flex-1"
-                />
-                {emails.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => setEmails(emails.filter((_, j) => j !== i))}
-                    className="text-red-400 hover:text-red-600 p-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
+           <div className="space-y-2">
+             {emails.map((entry, i) => (
+               <div key={i} className="space-y-1">
+                 <div className="flex items-center gap-2">
+                   <Input
+                     value={entry.email}
+                     onChange={(e) => {
+                       const next = [...emails];
+                       next[i] = { email: e.target.value };
+                       setEmails(next);
+                       if (e.target.value) {
+                         setEmailErrors((prev) => ({
+                           ...prev,
+                           [i]: !validateEmail(e.target.value),
+                         }));
+                       }
+                     }}
+                     placeholder="email@example.com"
+                     className={`rounded-xl h-11 border-[#00695c]/15 flex-1 ${
+                       emailErrors[i] ? "border-red-500" : ""
+                     }`}
+                   />
+                   {emails.length > 1 && (
+                     <button
+                       type="button"
+                       onClick={() => setEmails(emails.filter((_, j) => j !== i))}
+                       className="text-red-400 hover:text-red-600 p-2"
+                     >
+                       <Trash2 className="w-4 h-4" />
+                     </button>
+                   )}
+                 </div>
+                 {emailErrors[i] && entry.email && (
+                   <p className="text-xs text-red-500">Invalid email format</p>
+                 )}
+               </div>
+             ))}
+           </div>
         </CardContent>
       </Card>
 
@@ -1276,56 +1468,69 @@ function CenterSettingsForm({ centerId }: { centerId: number }) {
               <Plus className="w-3 h-3 mr-1" /> {t("admin.addPhone")}
             </Button>
           </div>
-          <div className="space-y-2">
-            {phones.map((entry, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <Select
-                  value={phones[i]?.countryCode ?? "49"}
-                  onValueChange={(v) => {
-                    const next = [...phones];
-                    next[i] = { ...next[i], countryCode: v };
-                    setPhones(next);
-                  }}
-                >
-                  <SelectTrigger className="w-[180px] rounded-xl h-11 border-[#00695c]/15">
-                    <SelectValue>
-                      {(() => {
-                        const code = phones[i]?.countryCode;
-                        const country = [...countries].find((c) => c.dial === code);
-                        return country ? `${country.flag} +${country.dial}` : t("admin.selectCountry");
-                      })()}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-0 shadow-xl">
-                    {countries.map((c) => (
-                      <SelectItem key={c.code} value={c.dial}>
-                        {c.flag} +{c.dial} {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  value={entry.number}
-                  onChange={(e) => {
-                    const next = [...phones];
-                    next[i] = { ...next[i], number: e.target.value };
-                    setPhones(next);
-                  }}
-                  placeholder={t("admin.phonePlaceholder")}
-                  className="rounded-xl h-11 border-[#00695c]/15 flex-1"
-                />
-                {phones.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => setPhones(phones.filter((_, j) => j !== i))}
-                    className="text-red-400 hover:text-red-600 p-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
+           <div className="space-y-2">
+             {phones.map((entry, i) => (
+               <div key={i} className="space-y-1">
+                 <div className="flex items-center gap-2">
+                   <Select
+                     value={phones[i]?.countryCode ?? "49"}
+                     onValueChange={(v) => {
+                       const next = [...phones];
+                       next[i] = { ...next[i], countryCode: v };
+                       setPhones(next);
+                     }}
+                   >
+                     <SelectTrigger className="w-[180px] rounded-xl h-11 border-[#00695c]/15">
+                       <SelectValue>
+                         {(() => {
+                           const code = phones[i]?.countryCode;
+                           const country = [...countries].find((c) => c.dial === code);
+                           return country ? `${country.flag} +${country.dial}` : t("admin.selectCountry");
+                         })()}
+                       </SelectValue>
+                     </SelectTrigger>
+                     <SelectContent className="rounded-2xl border-0 shadow-xl">
+                       {countries.map((c) => (
+                         <SelectItem key={c.code} value={c.dial}>
+                           {c.flag} +{c.dial} {c.name}
+                         </SelectItem>
+                       ))}
+                     </SelectContent>
+                   </Select>
+                   <Input
+                     value={entry.number}
+                     onChange={(e) => {
+                       const next = [...phones];
+                       next[i] = { ...next[i], number: e.target.value };
+                       setPhones(next);
+                       if (e.target.value) {
+                         setPhoneErrors((prev) => ({
+                           ...prev,
+                           [i]: !validatePhone(e.target.value),
+                         }));
+                       }
+                     }}
+                     placeholder={t("admin.phonePlaceholder")}
+                     className={`rounded-xl h-11 border-[#00695c]/15 flex-1 ${
+                       phoneErrors[i] ? "border-red-500" : ""
+                     }`}
+                   />
+                   {phones.length > 1 && (
+                     <button
+                       type="button"
+                       onClick={() => setPhones(phones.filter((_, j) => j !== i))}
+                       className="text-red-400 hover:text-red-600 p-2"
+                     >
+                       <Trash2 className="w-4 h-4" />
+                     </button>
+                   )}
+                 </div>
+                 {phoneErrors[i] && entry.number && (
+                   <p className="text-xs text-red-500">Phone must have 7-15 digits</p>
+                 )}
+               </div>
+             ))}
+           </div>
         </CardContent>
       </Card>
 
@@ -1385,7 +1590,7 @@ function CenterSettingsForm({ centerId }: { centerId: number }) {
         <CardContent className="p-6 space-y-4">
           <h3 className="font-semibold text-[#2c3e2d]">{t("admin.themeColor")}</h3>
           <div className="flex flex-wrap gap-3">
-            {["#e8f5e9","#ffffff","#f5f0e8","#e3f2fd","#fce4ec","#f3e5f5","#fff8e1","#e0f2f1","#f5f5f5","#00695c","#2c3e2d","#37474f"].map((c) => (
+            {["#e8f5e9","#ffffff","#f5f0e8","#e3f2fd","#fce4ec","#f3e5f5","#fff8e1","#e0f2f1","#f5f5f5","#00695c","#2c3e2d","#37474f","#c8e6c9","#a5d6a7","#81c784","#66bb6a","#b2dfdb","#80cbc4","#4db6ac","#b3e5fc","#81d4fa","#4fc3f7","#b39ddb","#9575cd","#ce93d8","#ab47bc","#ef9a9a","#e57373","#ffcc80","#ffb74d","#fff176","#ffd54f","#bcaaa4","#90a4ae","#78909c","#546e7a"].map((c) => (
               <button
                 key={c}
                 type="button"
@@ -1398,6 +1603,208 @@ function CenterSettingsForm({ centerId }: { centerId: number }) {
               />
             ))}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Usage Dashboard */}
+      {settings?.usage && (
+        <div className="space-y-4 mb-6">
+          <h3 className="text-sm font-semibold text-[#2c3e2d]">Usage & Limits</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              {
+                label: "Students",
+                value: settings.usage.studentCount,
+                limit: settings.limits.maxStudents,
+                color: "blue",
+              },
+              {
+                label: "Active (30d)",
+                value: settings.usage.activeStudents,
+                limit: settings.limits.maxStudents,
+                color: "green",
+              },
+              {
+                label: "Lessons",
+                value: settings.usage.lessonsCreated,
+                limit: 999999,
+                color: "purple",
+              },
+              {
+                label: "Quizzes",
+                value: settings.usage.quizzesCreated,
+                limit: 999999,
+                color: "orange",
+              },
+            ].map((stat) => (
+              <Card key={stat.label} className="clay-card border-0">
+                <CardContent className="p-4">
+                  <p className="text-xs text-[#78909c] mb-1">{stat.label}</p>
+                  <p className="text-2xl font-bold text-[#2c3e2d]">{stat.value}</p>
+                  {stat.limit !== 999999 && (
+                    <p className="text-xs text-[#78909c] mt-1">
+                      {Math.round((stat.value / stat.limit) * 100)}% used
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Storage Usage */}
+          <Card className="clay-card border-0">
+            <CardContent className="p-4">
+              <div className="flex justify-between mb-2">
+                <span className="text-sm font-medium text-[#2c3e2d]">Storage Usage</span>
+                <span className="text-sm font-medium text-[#00695c]">
+                  {settings.usage.storageUsedMB.toFixed(1)} MB / {settings.limits.maxStorageGB} GB
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className={`h-2 rounded-full transition-all ${
+                    (settings.usage.storageUsedMB / (settings.limits.maxStorageGB * 1024)) * 100 > 80
+                      ? "bg-red-500"
+                      : "bg-[#00695c]"
+                  }`}
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      (settings.usage.storageUsedMB / (settings.limits.maxStorageGB * 1024)) * 100
+                    )}%`,
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Plan Card - Enhanced */}
+      <Card className="clay-card border-0 bg-gradient-to-br from-[#e8f5e9] to-[#f1f8e9] mb-6">
+        <CardContent className="p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-[#2c3e2d]">{t("admin.plan")}</h3>
+              <p className="text-xs text-[#78909c] mt-1">
+                {settings?.plan === "premium"
+                  ? settings?.nextBillingDate
+                    ? `Renews on ${new Date(settings.nextBillingDate).toLocaleDateString()}`
+                    : "Active subscription"
+                  : "Upgrade to unlock unlimited resources"}
+              </p>
+            </div>
+            <span
+              className={`text-sm font-bold px-4 py-2 rounded-full ${
+                settings?.plan === "premium"
+                  ? "bg-green-100 text-green-700"
+                  : "bg-blue-100 text-blue-700"
+              }`}
+            >
+              {settings?.plan === "premium" ? t("admin.planPremium") : t("admin.planFree")}
+            </span>
+          </div>
+
+          {/* Plan Features */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-white/50">
+              <span className="text-sm text-[#2c3e2d]">Students</span>
+              <span className="font-semibold text-[#00695c]">
+                {settings?.usage?.studentCount ?? 0}/
+                {settings?.plan === "premium" ? "∞" : "10"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-white/50">
+              <span className="text-sm text-[#2c3e2d]">Videos per week</span>
+              <span className="font-semibold text-[#00695c]">
+                {settings?.videoUploadCount ?? 0}/
+                {settings?.plan === "premium" ? "∞" : "1"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-white/50">
+              <span className="text-sm text-[#2c3e2d]">Meeting Rooms</span>
+              <span
+                className={`font-semibold ${
+                  settings?.plan === "premium" ? "text-green-600" : "text-[#78909c]"
+                }`}
+              >
+                {settings?.plan === "premium" ? "✓ Included" : "Not included"}
+              </span>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          {settings?.plan === "free" ? (
+            <UpgradeDialog
+              onUpgrade={() => upgradeMutation.mutate()}
+              isPending={upgradeMutation.isPending}
+            />
+          ) : (
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                className="w-full rounded-full"
+                onClick={() => alert("Subscription management is not available in development mode.")}
+              >
+                {t("admin.manageSubscription")}
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full text-red-600 rounded-full"
+                disabled={downgradeMutation.isPending}
+                onClick={() => {
+                  if (window.confirm("Downgrade to Free plan? This is a simulation.")) {
+                    downgradeMutation.mutate();
+                  }
+                }}
+              >
+                {downgradeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {t("admin.cancelSubscription")}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+        {/* Delete Center */}
+      <Card className="clay-card border-0 border-red-200">
+        <CardContent className="p-6 space-y-4">
+          <h3 className="font-semibold text-red-600">{t("admin.deleteCenter")}</h3>
+          <p className="text-sm text-[#78909c]">{t("admin.deleteCenterWarning")}</p>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-xl h-11 border-red-300 text-red-600 hover:bg-red-50"
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4 mr-2" />
+                )}
+                {t("admin.deleteCenter")}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="rounded-3xl">
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t("admin.confirmDeleteTitle")}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t("admin.confirmDeleteDescription")}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="rounded-full">{t("admin.cancel")}</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleteMutation.mutate({ id: settings!.id })}
+                  className="rounded-full bg-red-600 hover:bg-red-700 text-white"
+                >
+                  {t("admin.deleteCenter")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent>
       </Card>
 
@@ -1419,6 +1826,457 @@ function CenterSettingsForm({ centerId }: { centerId: number }) {
         )}
         {t("admin.saveChanges")}
       </Button>
+    </div>
+  );
+}
+
+function UpgradeDialog({ onUpgrade, isPending }: { onUpgrade: () => void; isPending: boolean }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="rounded-full bg-[#00695c] hover:bg-[#004d40] font-semibold w-full"
+      >
+        {t("admin.planUpgrade")} - €49.99/month
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="rounded-3xl border-0 shadow-xl max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-[#2c3e2d]">Upgrade to Premium</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-[#78909c]">
+              Unlock all features with the Premium plan:
+            </p>
+            <ul className="space-y-2">
+              {[
+                "Unlimited students (no 10-student cap)",
+                "Unlimited videos (no 1/week limit)",
+                "Unlimited invite codes",
+                "Meeting rooms for live sessions",
+                "100 GB storage (vs 5 GB Free)",
+              ].map((feature) => (
+                <li key={feature} className="flex items-center gap-2 text-sm text-[#2c3e2d]">
+                  <span className="w-5 h-5 rounded-full bg-[#00695c]/10 flex items-center justify-center shrink-0">
+                    <span className="text-[#00695c] text-xs">✓</span>
+                  </span>
+                  {feature}
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-[#78909c] italic">
+              This is a simulated upgrade (no real payment). Your plan will be set to Premium for 30 days.
+            </p>
+            <Button
+              type="button"
+              onClick={() => {
+                onUpgrade();
+                setOpen(false);
+              }}
+              disabled={isPending}
+              className="w-full rounded-full bg-[#00695c] hover:bg-[#004d40] font-semibold"
+            >
+              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              Simulate Upgrade to Premium
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function MeetingRoomsPanel() {
+  const { t } = useTranslation();
+  const utils = trpc.useUtils();
+  const { data: rooms, isLoading } = trpc.meetingRooms.list.useQuery();
+  const createRoom = trpc.meetingRooms.create.useMutation({
+    onSuccess: () => utils.meetingRooms.list.invalidate(),
+  });
+  const deleteRoom = trpc.meetingRooms.delete.useMutation({
+    onSuccess: () => utils.meetingRooms.list.invalidate(),
+  });
+  const [showForm, setShowForm] = useState(false);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [url, setUrl] = useState("");
+  const [scheduledAt, setScheduledAt] = useState("");
+
+  const handleCreate = () => {
+    if (!name.trim() || !url.trim()) return;
+    createRoom.mutate({
+      name: name.trim(),
+      description: description.trim() || undefined,
+      url: url.trim(),
+      scheduledAt: scheduledAt || undefined,
+    });
+    setName("");
+    setDescription("");
+    setUrl("");
+    setScheduledAt("");
+    setShowForm(false);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-[#2c3e2d]">{t("admin.tabMeetingRooms")}</h2>
+        <Button
+          onClick={() => setShowForm(!showForm)}
+          className="rounded-full bg-[#00695c] hover:bg-[#004d40] font-semibold"
+        >
+          <Plus className="w-4 h-4 mr-1" />
+          {showForm ? "Cancel" : "Add Room"}
+        </Button>
+      </div>
+
+      {showForm && (
+        <Card className="clay-card border-0">
+          <CardContent className="p-6 space-y-4">
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Room name (e.g. A1 Conversation Class)"
+              className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm"
+            />
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Description (optional)"
+              className="flex min-h-[80px] w-full rounded-xl border border-[#00695c]/15 bg-white px-4 py-3 text-sm"
+            />
+            <input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="Meeting URL (e.g. https://zoom.us/j/...)"
+              className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm"
+            />
+            <input
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+              className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm"
+            />
+            <Button
+              onClick={handleCreate}
+              disabled={createRoom.isPending || !name.trim() || !url.trim()}
+              className="rounded-full bg-[#00695c] hover:bg-[#004d40]"
+            >
+              {createRoom.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Room"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading ? (
+        <Card className="clay-card border-0 p-8 text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-[#00695c] mx-auto" />
+        </Card>
+      ) : !rooms || rooms.length === 0 ? (
+        <Card className="clay-card border-0 p-12 text-center">
+          <Video className="w-12 h-12 text-[#78909c] mx-auto mb-4" />
+          <p className="text-[#78909c]">No meeting rooms yet. Create one to host live sessions.</p>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {rooms.map((room) => (
+            <Card key={room.id} className="clay-card border-0">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-[#2c3e2d]">{room.name}</h3>
+                    {room.description && (
+                      <p className="text-sm text-[#78909c] mt-1">{room.description}</p>
+                    )}
+                    <a
+                      href={room.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-[#00695c] hover:underline mt-2 inline-block"
+                    >
+                      Join Meeting →
+                    </a>
+                    {room.scheduledAt && (
+                      <p className="text-xs text-[#78909c] mt-1">
+                        Scheduled: {new Date(room.scheduledAt).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => deleteRoom.mutate({ id: room.id })}
+                    className="text-red-400 hover:text-red-600 p-1"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const EMOJI_LIST = ["👍", "❤️", "😂", "🎉", "🔥", "😮", "🙏", "💯"];
+
+function ChatPanel() {
+  const { t } = useTranslation();
+  const utils = trpc.useUtils();
+  const { user } = useAuth();
+  const { data: messages, isLoading } = trpc.chat.list.useQuery(undefined, {
+    refetchInterval: 3000,
+  });
+  const sendMessage = trpc.chat.send.useMutation({
+    onSuccess: () => utils.chat.list.invalidate(),
+  });
+  const deleteMessage = trpc.chat.delete.useMutation({
+    onSuccess: () => utils.chat.list.invalidate(),
+  });
+  const reactMessage = trpc.chat.react.useMutation({
+    onSuccess: () => utils.chat.list.invalidate(),
+  });
+  const getPresignedUrl = trpc.upload.getChatUploadUrl.useMutation();
+  const [text, setText] = useState("");
+  const [pendingImage, setPendingImage] = useState<{ file: File; preview: string } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [emojiPicker, setEmojiPicker] = useState<number | null>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const isNearBottom = useRef(true);
+
+  useEffect(() => {
+    if (isNearBottom.current) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  const onChatScroll = useCallback(() => {
+    const el = chatContainerRef.current;
+    if (!el) return;
+    isNearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+  }, []);
+
+  useEffect(() => {
+    return () => { if (pendingImage) URL.revokeObjectURL(pendingImage.preview); };
+  }, [pendingImage]);
+
+  const handleSend = async () => {
+    if (!text.trim() && !pendingImage) return;
+    if (pendingImage) {
+      setUploading(true);
+      try {
+        const { uploadUrl, publicUrl } = await getPresignedUrl.mutateAsync({
+          fileName: pendingImage.file.name,
+          contentType: pendingImage.file.type,
+          fileSize: pendingImage.file.size,
+        });
+        await fetch(uploadUrl, { method: "PUT", body: pendingImage.file, headers: { "Content-Type": pendingImage.file.type } });
+        sendMessage.mutate({ message: text.trim(), imageUrl: publicUrl });
+      } catch (err) {
+        console.error("Upload failed", err);
+        setUploading(false);
+        return;
+      }
+      setUploading(false);
+      setPendingImage(null);
+    } else {
+      sendMessage.mutate({ message: text.trim() });
+    }
+    setText("");
+    isNearBottom.current = true;
+    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (pendingImage) URL.revokeObjectURL(pendingImage.preview);
+    setPendingImage({ file, preview: URL.createObjectURL(file) });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-lg font-semibold text-[#2c3e2d]">{t("admin.tabChat")}</h2>
+
+      <Card className="clay-card border-0 relative overflow-hidden">
+        <CardContent className="p-4 relative">
+          <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03]">
+            <svg className="w-full h-full" viewBox="0 0 1200 800" preserveAspectRatio="none">
+              <defs>
+                <pattern id="chat-contour-a" patternUnits="userSpaceOnUse" width="120" height="80" patternTransform="scale(1.5)">
+                  <path d="M0,40 Q30,20 60,40 T120,40" fill="none" stroke="#00695c" strokeWidth="2" />
+                  <path d="M0,20 Q30,0 60,20 T120,20" fill="none" stroke="#00695c" strokeWidth="1.5" opacity="0.6" />
+                  <path d="M0,60 Q30,40 60,60 T120,60" fill="none" stroke="#00695c" strokeWidth="1.5" opacity="0.6" />
+                  <path d="M0,0 Q30,-20 60,0 T120,0" fill="none" stroke="#00695c" strokeWidth="1" opacity="0.3" />
+                  <path d="M0,80 Q30,60 60,80 T120,80" fill="none" stroke="#00695c" strokeWidth="1" opacity="0.3" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#chat-contour-a)" />
+            </svg>
+          </div>
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+
+          {/* Image Lightbox */}
+          <Dialog open={!!lightboxUrl} onOpenChange={(o) => !o && setLightboxUrl(null)}>
+            <DialogContent className="max-w-3xl border-0 bg-transparent shadow-none">
+              {lightboxUrl && <img src={lightboxUrl} alt="" className="w-full rounded-2xl" />}
+            </DialogContent>
+          </Dialog>
+
+          <div ref={chatContainerRef} onScroll={onChatScroll} className="h-[400px] overflow-y-auto space-y-3 mb-4 pr-2">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="w-6 h-6 animate-spin text-[#00695c]" />
+              </div>
+            ) : !messages || messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <MessageSquare className="w-10 h-10 text-[#78909c] mb-2" />
+                <p className="text-sm text-[#78909c]">No messages yet. Start the conversation!</p>
+              </div>
+            ) : (
+              messages.map((msg) => {
+                const isOwn = msg.userId === user?.id;
+                const userReacted = (emoji: string) =>
+                  (msg.reactions as { emoji: string; userId: number }[])?.some(
+                    (r) => r.emoji === emoji && r.userId === user?.id
+                  );
+
+                return (
+                  <div key={msg.id} className={`group flex gap-2 ${isOwn ? "flex-row-reverse" : ""}`}>
+                    <div className={`max-w-[75%] rounded-2xl px-4 py-2 ${
+                      isOwn
+                        ? "bg-[#00695c] text-white rounded-tr-md"
+                        : "bg-white text-[#2c3e2d] rounded-tl-md border border-[#00695c]/10"
+                    }`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-medium opacity-70 mb-1">
+                          {msg.userName ?? "Unknown"}
+                        </p>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-black/10">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align={isOwn ? "end" : "start"} className="rounded-xl border-0 shadow-xl min-w-[140px]">
+                            <DropdownMenuItem className="relative" onSelect={(e) => { e.preventDefault(); setEmojiPicker(emojiPicker === msg.id ? null : msg.id); }}>
+                              <span className="mr-2">😊</span> React
+                              {emojiPicker === msg.id && (
+                                <div className="absolute left-0 top-full mt-1 z-50 flex gap-1 p-2 bg-white rounded-xl shadow-xl border">
+                                  {EMOJI_LIST.map((emoji) => (
+                                    <button
+                                      key={emoji}
+                                      onClick={() => { reactMessage.mutate({ id: msg.id, emoji }); setEmojiPicker(null); }}
+                                      className={`text-lg hover:scale-125 transition-transform p-0.5 ${userReacted(emoji) ? "scale-110" : ""}`}
+                                    >
+                                      {emoji}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </DropdownMenuItem>
+                            {isOwn && (
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => deleteMessage.mutate({ id: msg.id })}
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+
+                      {msg.imageUrl && (
+                        <img
+                          src={msg.imageUrl}
+                          alt=""
+                          className="max-w-full rounded-lg mb-1 max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => setLightboxUrl(msg.imageUrl!)}
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                      )}
+                      {msg.message && <p className="text-sm">{msg.message}</p>}
+
+                      {/* Reactions */}
+                      {(msg.reactions as { emoji: string; userId: number; userName: string }[])?.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {(msg.reactions as { emoji: string; userId: number; userName: string }[]).map((r, i) => (
+                            <button
+                              key={i}
+                              onClick={() => reactMessage.mutate({ id: msg.id, emoji: r.emoji })}
+                              className={`text-xs px-1.5 py-0.5 rounded-full border ${
+                                r.userId === user?.id
+                                  ? "bg-white/20 border-white/30"
+                                  : "bg-white/10 border-transparent"
+                              }`}
+                              title={r.userName}
+                            >
+                              {r.emoji}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      <p className="text-[10px] opacity-50 mt-1 text-right">
+                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div ref={chatEndRef} />
+          </div>
+
+          <div className="flex items-center gap-2 border-t border-[#00695c]/10 pt-4">
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="rounded-full bg-[#00695c]/10 text-[#00695c] hover:bg-[#00695c]/20 h-11 w-11 p-0 shrink-0"
+            >
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            </Button>
+            {pendingImage && (
+              <div className="relative shrink-0">
+                <img src={pendingImage.preview} alt="" className="h-10 w-10 rounded-lg object-cover border border-[#00695c]/20" />
+                <button
+                  onClick={() => { URL.revokeObjectURL(pendingImage.preview); setPendingImage(null); }}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            <input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSend()}
+              placeholder={pendingImage ? "Add a caption..." : "Type a message..."}
+              className="flex-1 h-11 rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm"
+            />
+            <Button
+              onClick={handleSend}
+              disabled={sendMessage.isPending || uploading || (!text.trim() && !pendingImage)}
+              className="rounded-full bg-[#00695c] hover:bg-[#004d40] h-11 w-11 p-0 shrink-0"
+            >
+              {sendMessage.isPending || uploading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

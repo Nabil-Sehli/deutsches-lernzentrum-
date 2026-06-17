@@ -51,7 +51,12 @@ export default function Navigation() {
   const myRequest = trpc.centerRequest.myRequest.useQuery(undefined, {
     enabled: isTeacher,
   });
-  const centerSlug = myRequest.data?.status === "approved" ? myRequest.data.slug : null;
+  const myCenter = trpc.center.myCenter.useQuery(undefined, {
+    enabled: isTeacher,
+  });
+  const centerSlug = myRequest.data?.status === "approved"
+    ? myRequest.data.slug
+    : (myCenter.data?.slug ?? null);
 
   return (
     <>
@@ -109,7 +114,7 @@ export default function Navigation() {
                     className="px-3 py-1.5 text-sm font-medium text-[#445E5D] rounded-lg hover:bg-[#445E5D]/6 transition-colors flex items-center gap-1.5"
                   >
                     <Building2 className="w-4 h-4" />
-                    Request Center
+                    {t("nav.requestCenter")}
                   </button>
                 )}
                 {isTeacher && user?.centerId && (
@@ -122,13 +127,15 @@ export default function Navigation() {
                   </Link>
                 )}
                 {centerSlug && (
-                  <Link
-                    to={`/c/${centerSlug}`}
+                  <a
+                    href={`/c/${centerSlug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="px-3 py-1.5 text-sm font-medium text-[#00695c] rounded-lg hover:bg-[#00695c]/6 transition-colors flex items-center gap-1.5"
                   >
                     <ExternalLink className="w-4 h-4" />
-                    View My Center
-                  </Link>
+                    {t("nav.viewMyCenter")}
+                  </a>
                 )}
                 <Link
                   to="/profile"
@@ -228,7 +235,7 @@ export default function Navigation() {
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#445E5D] font-medium hover:bg-[#445E5D]/6 transition-colors w-full"
                     >
                       <Building2 className="w-5 h-5" />
-                      Request Center
+                      {t("nav.requestCenter")}
                     </button>
                   )}
                   {isTeacher && user?.centerId && (
@@ -241,14 +248,15 @@ export default function Navigation() {
                     </Link>
                   )}
                   {centerSlug && (
-                    <Link
-                      to={`/c/${centerSlug}`}
+                    <a
+                      href={`/c/${centerSlug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#00695c] font-medium hover:bg-[#00695c]/6 transition-colors"
-                      onClick={() => setMobileOpen(false)}
                     >
                       <ExternalLink className="w-5 h-5" />
-                      View My Center
-                    </Link>
+                      {t("nav.viewMyCenter")}
+                    </a>
                   )}
                   <Link
                     to="/profile"

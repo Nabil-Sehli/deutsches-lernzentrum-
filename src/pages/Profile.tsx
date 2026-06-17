@@ -75,6 +75,7 @@ export default function Profile() {
       const { uploadUrl, publicUrl } = await getUploadUrl.mutateAsync({
         fileName: file.name,
         contentType: file.type,
+        fileSize: file.size,
       });
       await fetch(uploadUrl, {
         method: "PUT",

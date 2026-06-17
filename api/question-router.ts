@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { questions, lessons, centers } from "@db/schema";
+import { questions, lessons } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
@@ -33,11 +33,7 @@ export const questionRouter = createRouter({
         .where(eq(lessons.id, input.lessonId));
       if (!lesson) throw new TRPCError({ code: "NOT_FOUND", message: "Lesson not found" });
 
-      const [center] = await db
-        .select()
-        .from(centers)
-        .where(eq(centers.adminId, ctx.user.id));
-      if (!center || center.id !== lesson.centerId) {
+      if (ctx.user.centerId !== lesson.centerId) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized" });
       }
 
@@ -77,11 +73,7 @@ export const questionRouter = createRouter({
         .where(eq(lessons.id, question.lessonId));
       if (!lesson) throw new TRPCError({ code: "NOT_FOUND", message: "Lesson not found" });
 
-      const [center] = await db
-        .select()
-        .from(centers)
-        .where(eq(centers.adminId, ctx.user.id));
-      if (!center || center.id !== lesson.centerId) {
+      if (ctx.user.centerId !== lesson.centerId) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized" });
       }
 
@@ -113,11 +105,7 @@ export const questionRouter = createRouter({
         .where(eq(lessons.id, question.lessonId));
       if (!lesson) throw new TRPCError({ code: "NOT_FOUND", message: "Lesson not found" });
 
-      const [center] = await db
-        .select()
-        .from(centers)
-        .where(eq(centers.adminId, ctx.user.id));
-      if (!center || center.id !== lesson.centerId) {
+      if (ctx.user.centerId !== lesson.centerId) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Not authorized" });
       }
 
