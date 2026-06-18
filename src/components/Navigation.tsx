@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/providers/trpc";
@@ -16,6 +16,7 @@ import {
   Building2,
   Shield,
   ExternalLink,
+  Bell,
 } from "lucide-react";
 
 function DZLogo() {
@@ -47,6 +48,8 @@ export default function Navigation() {
   const isTeacher = user?.role === "teacher";
   const isAdmin = user?.role === "admin";
   const [requestFormOpen, setRequestFormOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   const myRequest = trpc.centerRequest.myRequest.useQuery(undefined, {
     enabled: isTeacher,
@@ -57,6 +60,31 @@ export default function Navigation() {
   const centerSlug = myRequest.data?.status === "approved"
     ? myRequest.data.slug
     : (myCenter.data?.slug ?? null);
+
+  const utils = trpc.useUtils();
+  const { data: unreadCount } = trpc.notifications.unreadCount.useQuery(undefined, {
+    enabled: isAuthenticated,
+    refetchInterval: 30000,
+  });
+  const { data: notifications } = trpc.notifications.list.useQuery({ limit: 5 }, {
+    enabled: isAuthenticated,
+  });
+  const markRead = trpc.notifications.markRead.useMutation({
+    onSuccess: () => utils.notifications.invalidate(),
+  });
+  const markAllRead = trpc.notifications.markAllRead.useMutation({
+    onSuccess: () => utils.notifications.invalidate(),
+  });
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   return (
     <>
@@ -150,6 +178,77 @@ export default function Navigation() {
 
           <div className="hidden md:flex items-center gap-3">
             <LanguageSwitcher />
+            {isAuthenticated && (
+              <div className="relative" ref={notifRef}>
+                <button
+                  onClick={() => setNotifOpen(!notifOpen)}
+                  className="relative p-2 text-[#445E5D] rounded-lg hover:bg-[#445E5D]/6 transition-colors"
+                >
+                  <Bell className="w-5 h-5" />
+                  {(unreadCount ?? 0) > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4.5 h-4.5 text-[10px] font-bold text-white bg-red-500 rounded-full min-w-[18px] min-h-[18px]">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+                {notifOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-[#E6DFD3] overflow-hidden z-50">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-[#E6DFD3]">
+                      <span className="text-sm font-semibold text-[#2c3e2d]">Notifications</span>
+                      {(unreadCount ?? 0) > 0 && (
+                        <button
+                          onClick={() => markAllRead.mutate()}
+                          className="text-xs text-[#00695c] font-medium hover:underline"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {!notifications || notifications.length === 0 ? (
+                        <div className="px-4 py-8 text-center text-sm text-[#78909c]">
+                          No notifications yet
+                        </div>
+                      ) : (
+                        notifications.map((n) => (
+                          <button
+                            key={n.id}
+                            onClick={() => {
+                              if (!n.read) markRead.mutate({ id: n.id });
+                              setNotifOpen(false);
+                              const role = user?.role;
+                              let path = n.link ?? "/dashboard";
+                              if (n.type === "new_message") {
+                                path = role === "teacher" ? "/admin?tab=chat" : "/dashboard";
+                              } else if (n.type === "upcoming_meeting") {
+                                path = role === "teacher" ? "/admin?tab=meetingRooms" : "/dashboard";
+                              }
+                              navigate(path);
+                            }}
+                            className={`w-full text-left px-4 py-3 hover:bg-[#445E5D]/4 transition-colors border-b border-[#E6DFD3]/50 last:border-b-0 ${!n.read ? "bg-[#B1D4CD]/10" : ""}`}
+                          >
+                            <div className="flex items-start gap-2">
+                              {!n.read && (
+                                <span className="w-2 h-2 mt-1.5 rounded-full bg-[#00695c] flex-shrink-0" />
+                              )}
+                              <div className={!n.read ? "" : "ml-4"}>
+                                <p className="text-sm font-medium text-[#2c3e2d]">{n.title}</p>
+                                {n.body && (
+                                  <p className="text-xs text-[#78909c] mt-0.5 line-clamp-2">{n.body}</p>
+                                )}
+                                <p className="text-[10px] text-[#aab7b7] mt-1">
+                                  {new Date(n.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#445E5D]/8">

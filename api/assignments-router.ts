@@ -4,6 +4,7 @@ import { getDb } from "./queries/connection";
 import { assignments, submissions, users, quizAttempts, lessons } from "@db/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { createNotification } from "./lib/notifications";
 
 export const assignmentsRouter = createRouter({
   listByCenter: authedQuery.query(async ({ ctx }) => {
@@ -113,6 +114,15 @@ export const assignmentsRouter = createRouter({
         gradedBy: ctx.user.id,
         gradedAt: new Date(),
       }).where(eq(submissions.id, input.id));
+
+      await createNotification(
+        sub.studentId,
+        "grade_ready",
+        "Grade ready",
+        `Your assignment has been graded: ${input.grade}/100`,
+        "/dashboard"
+      );
+
       return { success: true };
     }),
 

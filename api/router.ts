@@ -12,6 +12,7 @@ import { webhooksRouter } from "./webhooks-router";
 import { meetingRoomsRouter } from "./meeting-rooms-router";
 import { chatRouter } from "./chat-router";
 import { assignmentsRouter } from "./assignments-router";
+import { notificationsRouter } from "./notifications-router";
 import { createRouter, publicQuery } from "./middleware";
 
 export const appRouter = createRouter({
@@ -30,6 +31,7 @@ export const appRouter = createRouter({
   meetingRooms: meetingRoomsRouter,
   chat: chatRouter,
   assignments: assignmentsRouter,
+  notifications: notificationsRouter,
 });
 
 export type AppRouter = typeof appRouter;

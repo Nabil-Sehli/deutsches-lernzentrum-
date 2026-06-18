@@ -372,3 +372,20 @@ export const submissions = mysqlTable("submissions", {
 
 export type Submission = typeof submissions.$inferSelect;
 export type InsertSubmission = typeof submissions.$inferInsert;
+
+export const notifications = mysqlTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+  type: mysqlEnum("type", ["new_message", "upcoming_meeting", "grade_ready", "assignment_posted"]).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  body: text("body"),
+  link: varchar("link", { length: 512 }),
+  read: boolean("read").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("notifications_userId_idx").on(table.userId),
+  readIdx: index("notifications_read_idx").on(table.read, table.userId),
+}));
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;

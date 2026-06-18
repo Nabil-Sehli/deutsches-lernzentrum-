@@ -2,8 +2,9 @@ import { z } from "zod";
 import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { chatMessages, users } from "@db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, ne } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { createNotification } from "./lib/notifications";
 
 export const chatRouter = createRouter({
   list: authedQuery.query(async ({ ctx }) => {
@@ -47,6 +48,16 @@ export const chatRouter = createRouter({
         imageUrl: input.imageUrl ?? null,
         reactions: [],
       });
+
+      const centerUsers = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(and(eq(users.centerId, ctx.user.centerId), ne(users.id, ctx.user.id)));
+
+      await Promise.all(centerUsers.map(u =>
+        createNotification(u.id, "new_message", "New chat message", `${ctx.user.name ?? "Someone"} sent a message in the center chat`, "/dashboard")
+      ));
+
       return { id: msg.insertId };
     }),
 

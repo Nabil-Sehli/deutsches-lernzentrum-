@@ -2,9 +2,10 @@ import { z } from "zod";
 import { createRouter, publicQuery, authedQuery, getCenterPlan } from "./middleware";
 import { getDb } from "./queries/connection";
 import { meetingRooms, meetingRoomMessages, users } from "@db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, ne } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createDailyRoom } from "./lib/meeting";
+import { createNotification } from "./lib/notifications";
 
 export const meetingRoomsRouter = createRouter({
   listByCenter: publicQuery
@@ -63,6 +64,19 @@ export const meetingRoomsRouter = createRouter({
         url: daily.url,
         scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : null,
       });
+
+      if (input.scheduledAt) {
+        const centerUsers = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(and(eq(users.centerId, ctx.user.centerId), ne(users.id, ctx.user.id)));
+
+        const dateStr = new Date(input.scheduledAt).toLocaleDateString();
+        await Promise.all(centerUsers.map(u =>
+          createNotification(u.id, "upcoming_meeting", "Upcoming meeting", `"${input.name}" is scheduled for ${dateStr}`, "/dashboard")
+        ));
+      }
+
       return { id: room.insertId, name: input.name, url: daily.url };
     }),
 
