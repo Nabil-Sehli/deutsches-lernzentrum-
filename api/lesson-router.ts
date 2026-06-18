@@ -1,9 +1,10 @@
 import { z } from "zod";
 import { createRouter, publicQuery, authedQuery, checkVideoUploadLimit, incrementVideoUploadCount } from "./middleware";
 import { getDb } from "./queries/connection";
-import { lessons, questions, quizAttempts } from "@db/schema";
-import { eq } from "drizzle-orm";
+import { lessons, questions, quizAttempts, users } from "@db/schema";
+import { eq, and } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { createNotification } from "./lib/notifications";
 
 export const lessonRouter = createRouter({
   listByCenter: publicQuery
@@ -66,6 +67,16 @@ export const lessonRouter = createRouter({
           videoUrl: input.videoUrl,
           order: input.order,
         });
+
+        const students = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(and(eq(users.centerId, ctx.user.centerId), eq(users.role, "student")));
+
+        await Promise.all(students.map(s =>
+          createNotification(s.id, "assignment_posted", "New lesson", `"${input.title}" has been added`, "/dashboard")
+        ));
+
         return lesson;
       } finally {
         await incrementVideoUploadCount(ctx.user.centerId);

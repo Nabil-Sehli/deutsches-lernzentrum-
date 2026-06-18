@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import Navigation from "@/components/Navigation";
 import { useAuth } from "@/hooks/useAuth";
@@ -58,6 +58,7 @@ import {
   BarChart3,
   GraduationCap,
   ClipboardList,
+  ClipboardCheck,
   PlayCircle,
   AlertTriangle,
   Settings,
@@ -645,6 +646,13 @@ export default function Admin() {
                 Progress
               </TabsTrigger>
               <TabsTrigger
+                value="submissions"
+                className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
+              >
+                <ClipboardCheck className="w-4 h-4 mr-2" />
+                Submissions
+              </TabsTrigger>
+              <TabsTrigger
                 value="settings"
                 className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
               >
@@ -974,6 +982,11 @@ export default function Admin() {
               <ProgressPanel />
             </TabsContent>
 
+            {/* Submissions Tab */}
+            <TabsContent value="submissions">
+              <SubmissionsPanel />
+            </TabsContent>
+
             {/* Settings Tab */}
             <TabsContent value="settings">
               <h2 className="text-lg font-semibold text-[#2c3e2d] mb-4">
@@ -1183,6 +1196,192 @@ function ProgressPanel() {
           </Card>
         ))}
       </div>
+    </div>
+  );
+}
+
+function SubmissionsPanel() {
+  const utils = trpc.useUtils();
+  const { data: submissions, isLoading } = trpc.assignments.listSubmissions.useQuery();
+  const gradeMutation = trpc.assignments.grade.useMutation({
+    onSuccess: () => utils.assignments.listSubmissions.invalidate(),
+  });
+  const [gradingId, setGradingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editValues, setEditValues] = useState<Record<number, { grade: string; feedback: string }>>({});
+
+  const handleGrade = async (id: number) => {
+    const val = editValues[id];
+    if (!val) return;
+    const grade = parseInt(val.grade);
+    if (isNaN(grade) || grade < 0 || grade > 100) return;
+    setGradingId(id);
+    try {
+      await gradeMutation.mutateAsync({ id, grade, feedback: val.feedback || undefined });
+      setEditingId(null);
+      setEditValues(prev => { const next = { ...prev }; delete next[id]; return next; });
+    } finally {
+      setGradingId(null);
+    }
+  };
+
+  const startEditing = (id: number, currentGrade: number | null, currentFeedback: string | null) => {
+    setEditValues(prev => ({ ...prev, [id]: { grade: currentGrade?.toString() ?? "", feedback: currentFeedback ?? "" } }));
+    setEditingId(id);
+  };
+
+  const grouped = useMemo(() => {
+    if (!submissions) return [];
+    const map = new Map<string, typeof submissions>();
+    for (const s of submissions) {
+      const key = s.assignmentTitle;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(s);
+    }
+    return Array.from(map.entries());
+  }, [submissions]);
+
+  if (isLoading) {
+    return (
+      <Card className="clay-card border-0 p-12 text-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#00695c] mx-auto" />
+      </Card>
+    );
+  }
+
+  if (!submissions || submissions.length === 0) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-[#2c3e2d]">Submissions</h2>
+        <Card className="clay-card border-0 p-12 text-center">
+          <ClipboardCheck className="w-12 h-12 text-[#78909c] mx-auto mb-4" />
+          <p className="text-[#78909c]">No submissions yet. Students will appear here once they submit their work.</p>
+        </Card>
+      </div>
+    );
+  }
+
+  const isGrading = (id: number) => gradingId === id;
+  const isEditing = (id: number) => editingId === id;
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-lg font-semibold text-[#2c3e2d]">Submissions</h2>
+      {grouped.map(([title, subs]) => (
+        <Card key={title} className="clay-card border-0 overflow-hidden">
+          <CardContent className="p-0">
+            <div className="bg-[#00695c]/5 px-5 py-3 border-b border-[#E6DFD3]">
+              <h3 className="font-semibold text-[#2c3e2d]">{title}</h3>
+              <p className="text-xs text-[#78909c]">{subs.length} submission{subs.length !== 1 ? "s" : ""}</p>
+            </div>
+            {subs.map((s) => {
+              const editing = isEditing(s.id);
+              const vals = editValues[s.id] ?? { grade: s.grade?.toString() ?? "", feedback: s.feedback ?? "" };
+              return (
+                <div key={s.id} className="px-5 py-4 border-b border-[#E6DFD3]/50 last:border-b-0">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="text-sm font-medium text-[#2c3e2d]">
+                        {s.studentTitle ? `${s.studentTitle}. ${s.studentName}` : s.studentName}
+                      </p>
+                      <p className="text-[10px] text-[#aab7b7]">
+                        Submitted {new Date(s.submittedAt).toLocaleString()}
+                      </p>
+                    </div>
+                    {s.grade != null && (
+                      <span className="text-sm font-bold text-[#00695c]">{s.grade}/100</span>
+                    )}
+                  </div>
+                  {s.text && (
+                    <p className="text-sm text-[#445E5D] bg-[#F8F4EB] rounded-lg p-3 mb-3 whitespace-pre-wrap">{s.text}</p>
+                  )}
+                  {s.fileUrl && (
+                    <a
+                      href={s.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-[#00695c] font-medium hover:underline mb-3"
+                    >
+                      <Upload className="w-3 h-3" />
+                      View attachment
+                    </a>
+                  )}
+
+                  {s.grade != null && !editing ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-[#00695c]">Grade: {s.grade}/100</span>
+                        <button
+                          onClick={() => startEditing(s.id, s.grade, s.feedback)}
+                          className="text-xs text-[#00695c] font-medium hover:underline"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                      {s.feedback && (
+                        <p className="text-sm text-[#445E5D] bg-[#F0F7F4] rounded-lg p-3">{s.feedback}</p>
+                      )}
+                      {s.gradedAt && (
+                        <p className="text-[10px] text-[#aab7b7]">
+                          Graded {new Date(s.gradedAt).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        placeholder="Grade (0-100)"
+                        value={vals.grade}
+                        onChange={(e) => setEditValues(prev => ({
+                          ...prev,
+                          [s.id]: { ...prev[s.id] ?? { grade: "", feedback: "" }, grade: e.target.value }
+                        }))}
+                        className="w-full h-10 rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm"
+                      />
+                      <textarea
+                        placeholder="Feedback (optional)"
+                        value={vals.feedback}
+                        onChange={(e) => setEditValues(prev => ({
+                          ...prev,
+                          [s.id]: { ...prev[s.id] ?? { grade: "", feedback: "" }, feedback: e.target.value }
+                        }))}
+                        className="flex min-h-[60px] w-full rounded-xl border border-[#00695c]/15 bg-white px-4 py-2 text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleGrade(s.id)}
+                          disabled={isGrading(s.id) || !vals.grade}
+                          className="rounded-full bg-[#00695c] hover:bg-[#004d40] text-xs h-8"
+                        >
+                          {isGrading(s.id) ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3 mr-1" />}
+                          {s.grade != null ? "Update" : "Grade"}
+                        </Button>
+                        {editing && (
+                          <Button
+                            variant="ghost"
+                            onClick={() => setEditingId(null)}
+                            className="rounded-full text-xs h-8"
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
+                      {s.gradedAt && (
+                        <p className="text-[10px] text-[#aab7b7]">
+                          Graded {new Date(s.gradedAt).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }

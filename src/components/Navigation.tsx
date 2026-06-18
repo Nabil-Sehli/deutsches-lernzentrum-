@@ -64,10 +64,11 @@ export default function Navigation() {
   const utils = trpc.useUtils();
   const { data: unreadCount } = trpc.notifications.unreadCount.useQuery(undefined, {
     enabled: isAuthenticated,
-    refetchInterval: 30000,
+    refetchInterval: 10000,
   });
   const { data: notifications } = trpc.notifications.list.useQuery({ limit: 5 }, {
     enabled: isAuthenticated,
+    refetchInterval: 10000,
   });
   const markRead = trpc.notifications.markRead.useMutation({
     onSuccess: () => utils.notifications.invalidate(),
@@ -219,7 +220,7 @@ export default function Navigation() {
                               const role = user?.role;
                               let path = n.link ?? "/dashboard";
                               if (n.type === "new_message") {
-                                path = role === "teacher" ? "/admin?tab=chat" : "/dashboard";
+                                path = role === "teacher" ? "/admin?tab=chat" : "/dashboard#chat";
                               } else if (n.type === "upcoming_meeting") {
                                 path = role === "teacher" ? "/admin?tab=meetingRooms" : "/dashboard";
                               }

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import Navigation from "@/components/Navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -66,6 +66,7 @@ export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth({
     redirectOnUnauthenticated: true,
   });
+  const location = useLocation();
   const [redeemOpen, setRedeemOpen] = useState(false);
   const [callRoom, setCallRoom] = useState<string | null>(null);
   const { data: meetingRooms } = trpc.meetingRooms.listByCenter.useQuery(
@@ -99,6 +100,16 @@ export default function Dashboard() {
   } = trpc.invite.myCenter.useQuery(undefined, {
     enabled: !!user,
   });
+
+  useEffect(() => {
+    const hash = location.hash;
+    if (hash) {
+      setTimeout(() => {
+        const el = document.getElementById(hash.slice(1));
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [location.hash]);
 
   const utils = trpc.useUtils();
   const redeemMutation = trpc.invite.redeem.useMutation({
@@ -610,6 +621,11 @@ function StudentAssignments() {
                         </button>
                       )}
                     </div>
+                    {graded && a.submission!.feedback && (
+                      <p className="text-xs text-[#445E5D] mt-2 bg-[#F0F7F4] rounded-lg p-2 whitespace-pre-wrap">
+                        <span className="font-medium">Feedback:</span> {a.submission!.feedback}
+                      </p>
+                    )}
                     {selectedAssignment === a.id && !submitted && (
                       <div className="mt-3 space-y-2">
                         <textarea
@@ -719,7 +735,7 @@ function StudentChat() {
   };
 
   return (
-    <div className="mt-12">
+    <div id="chat" className="mt-12">
       <h2 className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2">
         <MessageSquare className="w-5 h-5 text-[#00695c]" />
         {t("admin.tabChat")}

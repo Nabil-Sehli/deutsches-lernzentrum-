@@ -56,6 +56,16 @@ export const assignmentsRouter = createRouter({
         lessonId: input.lessonId ?? null,
         dueDate: input.dueDate ? new Date(input.dueDate) : null,
       });
+
+      const students = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(and(eq(users.centerId, ctx.user.centerId), eq(users.role, "student")));
+
+      await Promise.all(students.map(s =>
+        createNotification(s.id, "assignment_posted", "New assignment", `"${input.title}" has been posted`, "/dashboard")
+      ));
+
       return { id: a.insertId };
     }),
 
@@ -125,6 +135,32 @@ export const assignmentsRouter = createRouter({
 
       return { success: true };
     }),
+
+  listSubmissions: authedQuery.query(async ({ ctx }) => {
+    const db = getDb();
+    if (!ctx.user.centerId) throw new TRPCError({ code: "NOT_FOUND", message: "You do not manage a center" });
+
+    return db
+      .select({
+        id: submissions.id,
+        assignmentId: submissions.assignmentId,
+        studentId: submissions.studentId,
+        text: submissions.text,
+        fileUrl: submissions.fileUrl,
+        grade: submissions.grade,
+        feedback: submissions.feedback,
+        submittedAt: submissions.submittedAt,
+        gradedAt: submissions.gradedAt,
+        studentName: users.name,
+        studentTitle: users.title,
+        assignmentTitle: assignments.title,
+      })
+      .from(submissions)
+      .innerJoin(users, eq(submissions.studentId, users.id))
+      .innerJoin(assignments, eq(submissions.assignmentId, assignments.id))
+      .where(eq(assignments.centerId, ctx.user.centerId))
+      .orderBy(desc(submissions.submittedAt));
+  }),
 
   // ── Student Progress ──
 
