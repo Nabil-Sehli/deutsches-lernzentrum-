@@ -631,6 +631,20 @@ export default function Admin() {
                 {t("admin.tabChat")}
               </TabsTrigger>
               <TabsTrigger
+                value="assignments"
+                className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
+              >
+                <ClipboardList className="w-4 h-4 mr-2" />
+                Assignments
+              </TabsTrigger>
+              <TabsTrigger
+                value="progress"
+                className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Progress
+              </TabsTrigger>
+              <TabsTrigger
                 value="settings"
                 className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
               >
@@ -950,6 +964,16 @@ export default function Admin() {
               <ChatPanel />
             </TabsContent>
 
+            {/* Assignments Tab */}
+            <TabsContent value="assignments">
+              <AssignmentsPanel />
+            </TabsContent>
+
+            {/* Progress Tab */}
+            <TabsContent value="progress">
+              <ProgressPanel />
+            </TabsContent>
+
             {/* Settings Tab */}
             <TabsContent value="settings">
               <h2 className="text-lg font-semibold text-[#2c3e2d] mb-4">
@@ -988,6 +1012,176 @@ export default function Admin() {
             </TabsContent>
           </Tabs>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function AssignmentsPanel() {
+  const { t } = useTranslation();
+  const utils = trpc.useUtils();
+  const { data: assignments } = trpc.assignments.listByCenter.useQuery();
+  const createAssignment = trpc.assignments.create.useMutation({
+    onSuccess: () => utils.assignments.listByCenter.invalidate(),
+  });
+  const deleteAssignment = trpc.assignments.delete.useMutation({
+    onSuccess: () => utils.assignments.listByCenter.invalidate(),
+  });
+  const [showForm, setShowForm] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState("");
+
+  const handleCreate = () => {
+    if (!title.trim()) return;
+    createAssignment.mutate({
+      title: title.trim(),
+      description: description.trim() || undefined,
+      dueDate: dueDate || undefined,
+    });
+    setTitle("");
+    setDescription("");
+    setDueDate("");
+    setShowForm(false);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-[#2c3e2d]">Assignments</h2>
+        <Button
+          onClick={() => setShowForm(!showForm)}
+          className="rounded-full bg-[#00695c] hover:bg-[#004d40] font-semibold"
+        >
+          <Plus className="w-4 h-4 mr-1" />
+          {showForm ? "Cancel" : "New Assignment"}
+        </Button>
+      </div>
+
+      {showForm && (
+        <Card className="clay-card border-0">
+          <CardContent className="p-6 space-y-4">
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Assignment title"
+              className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm"
+            />
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Description (optional)"
+              className="flex min-h-[80px] w-full rounded-xl border border-[#00695c]/15 bg-white px-4 py-3 text-sm"
+            />
+            <input
+              type="datetime-local"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm"
+            />
+            <Button
+              onClick={handleCreate}
+              disabled={createAssignment.isPending || !title.trim()}
+              className="rounded-full bg-[#00695c] hover:bg-[#004d40]"
+            >
+              {createAssignment.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {!assignments || assignments.length === 0 ? (
+        <Card className="clay-card border-0 p-12 text-center">
+          <ClipboardList className="w-12 h-12 text-[#78909c] mx-auto mb-4" />
+          <p className="text-[#78909c]">No assignments yet. Create one to give homework to your students.</p>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {assignments.map((a) => (
+            <Card key={a.id} className="clay-card border-0">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-[#2c3e2d]">{a.title}</h3>
+                    {a.description && <p className="text-sm text-[#78909c] mt-1">{a.description}</p>}
+                    {a.dueDate && (
+                      <p className="text-xs text-[#78909c] mt-2">
+                        Due: {new Date(a.dueDate).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => deleteAssignment.mutate({ id: a.id })}
+                    className="text-red-400 hover:text-red-600 p-1 shrink-0"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProgressPanel() {
+  const { data: progress } = trpc.assignments.progress.useQuery();
+  const [selectedStudent, setSelectedStudent] = useState<number | null>(null);
+
+  if (!progress || progress.length === 0) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-[#2c3e2d]">Student Progress</h2>
+        <Card className="clay-card border-0 p-12 text-center">
+          <Users className="w-12 h-12 text-[#78909c] mx-auto mb-4" />
+          <p className="text-[#78909c]">No students have joined your center yet.</p>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-lg font-semibold text-[#2c3e2d]">Student Progress</h2>
+      <div className="grid grid-cols-1 gap-4">
+        {progress.map((p) => (
+          <Card key={p.student.id} className="clay-card border-0">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-[#2c3e2d]">
+                    {p.student.title ? `${p.student.title}. ${p.student.name}` : p.student.name}
+                  </h3>
+                  <p className="text-xs text-[#78909c]">{p.student.email}</p>
+                </div>
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="text-center">
+                    <p className="font-bold text-[#00695c]">{p.quizAttempts}</p>
+                    <p className="text-[10px] text-[#78909c]">Quizzes</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-bold text-[#00695c]">{p.avgQuizScore ?? "—"}%</p>
+                    <p className="text-[10px] text-[#78909c]">Avg Quiz</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-bold text-[#00695c]">{p.lessonsCompleted}/{p.totalLessons}</p>
+                    <p className="text-[10px] text-[#78909c]">Lessons</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-bold text-[#00695c]">{p.submissions}</p>
+                    <p className="text-[10px] text-[#78909c]">Submitted</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-bold text-[#00695c]">{p.avgAssignmentGrade ?? "—"}%</p>
+                    <p className="text-[10px] text-[#78909c]">Avg Grade</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );

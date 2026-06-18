@@ -39,6 +39,7 @@ import {
   Trash2,
   ExternalLink,
   Video,
+  ClipboardList,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -508,6 +509,11 @@ export default function Dashboard() {
             </>
           )}
 
+          {/* Assignments */}
+          {myCenter && user?.role === "student" && (
+            <StudentAssignments />
+          )}
+
           {/* Meeting Rooms */}
           {meetingRooms && meetingRooms.length > 0 && (
             <div className="mt-12">
@@ -545,6 +551,88 @@ export default function Dashboard() {
           {/* Chat */}
           {myCenter && <StudentChat />}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function StudentAssignments() {
+  const utils = trpc.useUtils();
+  const { data } = trpc.assignments.myAssignments.useQuery();
+  const submitAssignment = trpc.assignments.submit.useMutation({
+    onSuccess: () => utils.assignments.myAssignments.invalidate(),
+  });
+  const [selectedAssignment, setSelectedAssignment] = useState<number | null>(null);
+  const [text, setText] = useState("");
+
+  if (!data || data.length === 0) return null;
+
+  const handleSubmit = (assignmentId: number) => {
+    if (!text.trim()) return;
+    submitAssignment.mutate({ assignmentId, text: text.trim() });
+    setText("");
+    setSelectedAssignment(null);
+  };
+
+  return (
+    <div className="mt-12">
+      <h2 className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2">
+        <ClipboardList className="w-5 h-5 text-[#00695c]" />
+        Assignments
+      </h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
+        {data.map((a) => {
+          const submitted = !!a.submission;
+          const graded = a.submission?.grade != null;
+
+          return (
+            <Card key={a.id} className="clay-card border-0">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-[#2c3e2d]">{a.title}</h3>
+                    {a.description && <p className="text-sm text-[#78909c] mt-1">{a.description}</p>}
+                    {a.dueDate && (
+                      <p className="text-xs text-[#78909c] mt-2">Due: {new Date(a.dueDate).toLocaleDateString()}</p>
+                    )}
+                    <div className="flex items-center gap-3 mt-3">
+                      {submitted ? (
+                        <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                          ✓ Submitted
+                          {graded && ` — Grade: ${a.submission!.grade}/100`}
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setSelectedAssignment(selectedAssignment === a.id ? null : a.id)}
+                          className="text-xs bg-[#00695c] text-white px-3 py-1.5 rounded-full hover:bg-[#004d40] transition-colors font-medium"
+                        >
+                          Submit
+                        </button>
+                      )}
+                    </div>
+                    {selectedAssignment === a.id && !submitted && (
+                      <div className="mt-3 space-y-2">
+                        <textarea
+                          value={text}
+                          onChange={(e) => setText(e.target.value)}
+                          placeholder="Type your answer..."
+                          className="flex min-h-[80px] w-full rounded-xl border border-[#00695c]/15 bg-white px-4 py-3 text-sm"
+                        />
+                        <Button
+                          onClick={() => handleSubmit(a.id)}
+                          disabled={submitAssignment.isPending || !text.trim()}
+                          className="rounded-full bg-[#00695c] hover:bg-[#004d40] text-xs h-8 px-4"
+                        >
+                          {submitAssignment.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Submit Answer"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

@@ -336,3 +336,39 @@ export const chatMessages = mysqlTable("chat_messages", {
 
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = typeof chatMessages.$inferInsert;
+
+export const assignments = mysqlTable("assignments", {
+  id: serial("id").primaryKey(),
+  centerId: bigint("centerId", { mode: "number", unsigned: true }).notNull(),
+  lessonId: bigint("lessonId", { mode: "number", unsigned: true }),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  dueDate: timestamp("dueDate"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  centerIdIdx: index("assignments_centerId_idx").on(table.centerId),
+  lessonIdIdx: index("assignments_lessonId_idx").on(table.lessonId),
+}));
+
+export type Assignment = typeof assignments.$inferSelect;
+export type InsertAssignment = typeof assignments.$inferInsert;
+
+export const submissions = mysqlTable("submissions", {
+  id: serial("id").primaryKey(),
+  assignmentId: bigint("assignmentId", { mode: "number", unsigned: true }).notNull(),
+  studentId: bigint("studentId", { mode: "number", unsigned: true }).notNull(),
+  fileUrl: text("fileUrl"),
+  text: text("text"),
+  grade: int("grade"),
+  feedback: text("feedback"),
+  gradedBy: bigint("gradedBy", { mode: "number", unsigned: true }),
+  submittedAt: timestamp("submittedAt").defaultNow().notNull(),
+  gradedAt: timestamp("gradedAt"),
+}, (table) => ({
+  assignmentIdIdx: index("submissions_assignmentId_idx").on(table.assignmentId),
+  studentIdIdx: index("submissions_studentId_idx").on(table.studentId),
+  assignmentStudentIdx: index("submissions_assignmentStudent_idx").on(table.assignmentId, table.studentId),
+}));
+
+export type Submission = typeof submissions.$inferSelect;
+export type InsertSubmission = typeof submissions.$inferInsert;

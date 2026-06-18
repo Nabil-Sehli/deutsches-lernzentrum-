@@ -11,6 +11,7 @@ import { apiKeysRouter } from "./apikeys-router";
 import { webhooksRouter } from "./webhooks-router";
 import { meetingRoomsRouter } from "./meeting-rooms-router";
 import { chatRouter } from "./chat-router";
+import { assignmentsRouter } from "./assignments-router";
 import { createRouter, publicQuery } from "./middleware";
 
 export const appRouter = createRouter({
@@ -28,6 +29,7 @@ export const appRouter = createRouter({
   webhooks: webhooksRouter,
   meetingRooms: meetingRoomsRouter,
   chat: chatRouter,
+  assignments: assignmentsRouter,
 });
 
 export type AppRouter = typeof appRouter;
