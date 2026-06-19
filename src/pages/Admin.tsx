@@ -468,6 +468,8 @@ export default function Admin() {
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [studentsView, setStudentsView] = useState<"students" | "analytics">("students");
+  const [assignmentsView, setAssignmentsView] = useState<"assignments" | "progress" | "submissions">("assignments");
 
   const { data: stats, isLoading: statsLoading } =
     trpc.center.dashboardStats.useQuery(undefined, {
@@ -596,26 +598,34 @@ export default function Admin() {
                 <BookOpen className="w-4 h-4 mr-2" />
                 {t("admin.tabLessons")}
               </TabsTrigger>
-              <TabsTrigger
-                value="students"
-                className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
-              >
-                <Users className="w-4 h-4 mr-2" />
-                {t("admin.tabStudents")}
-              </TabsTrigger>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <TabsTrigger
+                    value="students"
+                    className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    {t("admin.tabStudents")}
+                    <ChevronDown className="w-4 h-4 ml-1" />
+                  </TabsTrigger>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={() => { setSearchParams({ tab: "students" }); setStudentsView("students"); }}>
+                    <Users className="w-4 h-4 mr-2" />
+                    Students
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { setSearchParams({ tab: "students" }); setStudentsView("analytics"); }}>
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    Analytics
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <TabsTrigger
                 value="invites"
                 className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
               >
                 <KeyRound className="w-4 h-4 mr-2" />
                 {t("admin.tabInvites")}
-              </TabsTrigger>
-              <TabsTrigger
-                value="analytics"
-                className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
-              >
-                <BarChart3 className="w-4 h-4 mr-2" />
-                {t("admin.tabAnalytics")}
               </TabsTrigger>
               <TabsTrigger
                 value="meetingRooms"
@@ -631,27 +641,33 @@ export default function Admin() {
                 <MessageSquare className="w-4 h-4 mr-2" />
                 {t("admin.tabChat")}
               </TabsTrigger>
-              <TabsTrigger
-                value="assignments"
-                className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
-              >
-                <ClipboardList className="w-4 h-4 mr-2" />
-                Assignments
-              </TabsTrigger>
-              <TabsTrigger
-                value="progress"
-                className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
-              >
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Progress
-              </TabsTrigger>
-              <TabsTrigger
-                value="submissions"
-                className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
-              >
-                <ClipboardCheck className="w-4 h-4 mr-2" />
-                Submissions
-              </TabsTrigger>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <TabsTrigger
+                    value="assignments"
+                    className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
+                  >
+                    <ClipboardList className="w-4 h-4 mr-2" />
+                    Assignments
+                    <ChevronDown className="w-4 h-4 ml-1" />
+                  </TabsTrigger>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={() => { setSearchParams({ tab: "assignments" }); setAssignmentsView("assignments"); }}>
+                    <ClipboardList className="w-4 h-4 mr-2" />
+                    Assignments
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { setSearchParams({ tab: "assignments" }); setAssignmentsView("progress"); }}>
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    Progress
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { setSearchParams({ tab: "assignments" }); setAssignmentsView("submissions"); }}>
+                    <ClipboardCheck className="w-4 h-4 mr-2" />
+                    Submissions
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <TabsTrigger
                 value="settings"
                 className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
@@ -781,14 +797,55 @@ export default function Admin() {
 
             {/* Students Tab */}
             <TabsContent value="students">
-              <h2 className="text-lg font-semibold text-[#2c3e2d] mb-4">
-                {t("admin.enrolledStudents")}
-              </h2>
-              {!students || students.length === 0 ? (
+              {studentsView === "students" ? (
+                !students || students.length === 0 ? (
+                  <Card className="clay-card border-0 p-12 text-center">
+                    <Users className="w-12 h-12 text-[#78909c] mx-auto mb-4" />
+                    <p className="text-[#78909c]">
+                      {t("admin.noStudentsDesc")}
+                    </p>
+                  </Card>
+                ) : (
+                  <div className="clay-card overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="hover:bg-transparent">
+                          <TableHead className="text-[#78909c]">{t("admin.name")}</TableHead>
+                          <TableHead className="text-[#78909c]">{t("admin.email")}</TableHead>
+                          <TableHead className="text-[#78909c]">{t("admin.joined")}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {students.map((s) => (
+                          <TableRow
+                            key={s.id}
+                            className="hover:bg-[#00695c]/3"
+                          >
+                            <TableCell className="font-medium text-[#2c3e2d]">
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-[#00695c]/10 flex items-center justify-center text-xs font-bold text-[#00695c]">
+                                  {(s.name ?? "U").charAt(0).toUpperCase()}
+                                </div>
+                                {s.name ?? t("admin.anonymous")}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-[#78909c]">
+                              {s.email ?? "-"}
+                            </TableCell>
+                            <TableCell className="text-[#78909c]">
+                              {new Date(s.createdAt).toLocaleDateString()}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )
+              ) : !analytics || analytics.length === 0 ? (
                 <Card className="clay-card border-0 p-12 text-center">
-                  <Users className="w-12 h-12 text-[#78909c] mx-auto mb-4" />
+                  <BarChart3 className="w-12 h-12 text-[#78909c] mx-auto mb-4" />
                   <p className="text-[#78909c]">
-                    {t("admin.noStudentsDesc")}
+                    {t("admin.noQuizData")}
                   </p>
                 </Card>
               ) : (
@@ -796,30 +853,49 @@ export default function Admin() {
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
-                        <TableHead className="text-[#78909c]">{t("admin.name")}</TableHead>
-                        <TableHead className="text-[#78909c]">{t("admin.email")}</TableHead>
-                        <TableHead className="text-[#78909c]">{t("admin.joined")}</TableHead>
+                        <TableHead className="text-[#78909c]">
+                          {t("admin.studentCol")}
+                        </TableHead>
+                        <TableHead className="text-[#78909c]">
+                          {t("admin.lessonCol")}
+                        </TableHead>
+                        <TableHead className="text-[#78909c]">
+                          {t("admin.scoreCol")}
+                        </TableHead>
+                        <TableHead className="text-[#78909c]">
+                          {t("admin.dateCol")}
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {students.map((s) => (
+                      {analytics.map((a) => (
                         <TableRow
-                          key={s.id}
+                          key={a.id}
                           className="hover:bg-[#00695c]/3"
                         >
                           <TableCell className="font-medium text-[#2c3e2d]">
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-full bg-[#00695c]/10 flex items-center justify-center text-xs font-bold text-[#00695c]">
-                                {(s.name ?? "U").charAt(0).toUpperCase()}
-                              </div>
-                              {s.name ?? t("admin.anonymous")}
-                            </div>
+                            {a.studentName}
                           </TableCell>
                           <TableCell className="text-[#78909c]">
-                            {s.email ?? "-"}
+                            {a.lessonTitle}
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`font-semibold ${
+                                (a.score / a.totalQuestions) * 100 >= 70
+                                  ? "text-[#00695c]"
+                                  : "text-amber-600"
+                              }`}
+                            >
+                              {a.score}/{a.totalQuestions}
+                            </span>
+                            <span className="text-xs text-[#78909c] ml-1">
+                              ({Math.round((a.score / a.totalQuestions) * 100)}
+                              %)
+                            </span>
                           </TableCell>
                           <TableCell className="text-[#78909c]">
-                            {new Date(s.createdAt).toLocaleDateString()}
+                            {new Date(a.completedAt).toLocaleDateString()}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -974,15 +1050,21 @@ export default function Admin() {
 
             {/* Assignments Tab */}
             <TabsContent value="assignments">
-              <AssignmentsPanel />
+              {assignmentsView === "assignments" ? (
+                <AssignmentsPanel />
+              ) : assignmentsView === "progress" ? (
+                <ProgressPanel />
+              ) : (
+                <SubmissionsPanel />
+              )}
             </TabsContent>
 
-            {/* Progress Tab */}
+            {/* Progress Tab (legacy direct access) */}
             <TabsContent value="progress">
               <ProgressPanel />
             </TabsContent>
 
-            {/* Submissions Tab */}
+            {/* Submissions Tab (legacy direct access) */}
             <TabsContent value="submissions">
               <SubmissionsPanel />
             </TabsContent>
