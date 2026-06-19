@@ -49,6 +49,7 @@ import { CountdownTimer } from "@/components/CountdownTimer";
 import {
   BookOpen,
   Users,
+  User,
   KeyRound,
   Plus,
   Trash2,
@@ -75,6 +76,8 @@ import {
   MessageSquare,
   Send,
   MoreHorizontal,
+  Mail,
+  Calendar,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -472,15 +475,20 @@ export default function Admin() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [studentsView, setStudentsView] = useState<"students" | "analytics">("students");
   const [assignmentsView, setAssignmentsView] = useState<"assignments" | "progress" | "submissions">("assignments");
+  const [selectedStudent, setSelectedStudent] = useState<{
+    id: number; name: string | null; email: string; avatar: string | null;
+    title: string | null; bio: string | null; createdAt: Date;
+  } | null>(null);
 
   const { data: stats, isLoading: statsLoading } =
     trpc.center.dashboardStats.useQuery(undefined, {
       enabled: user?.role === "teacher",
     });
 
-  const { data: students } = trpc.center.myStudents.useQuery(undefined, {
+  const { data: rawStudents } = trpc.center.myStudents.useQuery(undefined, {
     enabled: user?.role === "teacher",
   });
+  const students = rawStudents?.filter((s) => s.id !== user?.id);
 
   const { data: inviteCodesList } = trpc.invite.list.useQuery(undefined, {
     enabled: user?.role === "teacher",
@@ -821,12 +829,17 @@ export default function Admin() {
                         {students.map((s) => (
                           <TableRow
                             key={s.id}
-                            className="hover:bg-[#00695c]/3"
+                            className="hover:bg-[#00695c]/3 cursor-pointer"
+                            onClick={() => setSelectedStudent(s)}
                           >
                             <TableCell className="font-medium text-[#2c3e2d]">
                               <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-[#00695c]/10 flex items-center justify-center text-xs font-bold text-[#00695c]">
-                                  {(s.name ?? "U").charAt(0).toUpperCase()}
+                                <div className="w-8 h-8 rounded-full bg-[#00695c]/10 flex items-center justify-center overflow-hidden text-xs font-bold text-[#00695c] shrink-0">
+                                  {s.avatar ? (
+                                    <img src={s.avatar} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    (s.name ?? "U").charAt(0).toUpperCase()
+                                  )}
                                 </div>
                                 {s.name ?? t("admin.anonymous")}
                               </div>
@@ -906,6 +919,43 @@ export default function Admin() {
                 </div>
               )}
             </TabsContent>
+
+            {selectedStudent && (
+              <Dialog open={!!selectedStudent} onOpenChange={(open) => { if (!open) setSelectedStudent(null); }}>
+                <DialogContent className="sm:max-w-[420px]">
+                  <DialogHeader>
+                    <DialogTitle className="text-[#2c3e2d]">Student Profile</DialogTitle>
+                  </DialogHeader>
+                  <div className="flex flex-col items-center gap-4 py-4">
+                    <div className="w-24 h-24 rounded-full bg-[#00695c]/10 flex items-center justify-center overflow-hidden">
+                      {selectedStudent.avatar ? (
+                        <img src={selectedStudent.avatar} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="w-10 h-10 text-[#00695c]" />
+                      )}
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-lg font-semibold text-[#2c3e2d]">
+                        {selectedStudent.title ? `${selectedStudent.title}. ` : ""}{selectedStudent.name}
+                      </h3>
+                      {selectedStudent.bio && (
+                        <p className="text-sm text-[#78909c] mt-1 max-w-[300px]">{selectedStudent.bio}</p>
+                      )}
+                    </div>
+                    <div className="w-full space-y-3 pt-2 border-t border-[#00695c]/8">
+                      <div className="flex items-center gap-3 text-sm text-[#78909c]">
+                        <Mail className="w-4 h-4 shrink-0" />
+                        <span>{selectedStudent.email}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-[#78909c]">
+                        <Calendar className="w-4 h-4 shrink-0" />
+                        <span>Joined {new Date(selectedStudent.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
 
             {/* Invites Tab */}
             <TabsContent value="invites" className="space-y-4">
