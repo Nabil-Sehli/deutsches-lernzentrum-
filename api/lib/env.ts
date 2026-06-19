@@ -18,4 +18,6 @@ export const env = {
   s3AccessKeyId: required("S3_ACCESS_KEY_ID"),
   s3SecretAccessKey: required("S3_SECRET_ACCESS_KEY"),
   s3PublicUrl: required("S3_PUBLIC_URL"),
+  sendgridApiKey: required("SENDGRID_API_KEY"),
+  sendgridFromEmail: required("SENDGRID_FROM_EMAIL"),
 };

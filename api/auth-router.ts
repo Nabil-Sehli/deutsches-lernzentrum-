@@ -13,6 +13,10 @@ import {
 } from "./queries/users";
 import { createRouter, authedQuery, publicQuery } from "./middleware";
 import type { User } from "@db/schema";
+import { getDb } from "./queries/connection";
+import { emailVerificationCodes, users } from "@db/schema";
+import { eq, and, gt } from "drizzle-orm";
+import { sendVerificationCode } from "./lib/email";
 
 const updateProfileSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -43,7 +47,7 @@ const loginSchema = z.object({
 export const authRouter = createRouter({
   register: publicQuery
     .input(registerSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       const existing = await findUserByEmail(input.email);
       if (existing) {
         throw new TRPCError({
@@ -70,6 +74,80 @@ export const authRouter = createRouter({
           message: "Failed to create account",
         });
       }
+
+      const code = String(Math.floor(100000 + Math.random() * 900000));
+      const db = getDb();
+      await db.insert(emailVerificationCodes).values({
+        userId: user.id,
+        code,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      });
+      await sendVerificationCode(input.email, code);
+
+      return { requiresVerification: true, email: input.email };
+    }),
+
+  resendVerificationCode: publicQuery
+    .input(z.object({ email: z.string().email() }))
+    .mutation(async ({ input }) => {
+      const user = await findUserByEmail(input.email);
+      if (!user) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No account found with this email",
+        });
+      }
+      if (user.emailVerified) {
+        return { alreadyVerified: true };
+      }
+
+      const code = String(Math.floor(100000 + Math.random() * 900000));
+      const db = getDb();
+      await db.insert(emailVerificationCodes).values({
+        userId: user.id,
+        code,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      });
+      await sendVerificationCode(input.email, code);
+
+      return { sent: true };
+    }),
+
+  verifyEmail: publicQuery
+    .input(z.object({ email: z.string().email(), code: z.string().length(6) }))
+    .mutation(async ({ input, ctx }) => {
+      const user = await findUserByEmail(input.email);
+      if (!user) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Invalid email",
+        });
+      }
+
+      const db = getDb();
+      const [record] = await db
+        .select()
+        .from(emailVerificationCodes)
+        .where(
+          and(
+            eq(emailVerificationCodes.userId, user.id),
+            eq(emailVerificationCodes.code, input.code),
+            gt(emailVerificationCodes.expiresAt, new Date()),
+          )
+        )
+        .orderBy(emailVerificationCodes.createdAt)
+        .limit(1);
+
+      if (!record) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid or expired verification code",
+        });
+      }
+
+      await db.update(users)
+        .set({ emailVerified: true })
+        .where(eq(users.id, user.id));
 
       const token = await signSessionToken({ userId: user.id });
       const opts = getSessionCookieOptions(ctx.req.headers);

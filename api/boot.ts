@@ -36,6 +36,7 @@ app.post("/api/dev-login", bodyLimit({ maxSize: 50 * 1024 * 1024 }), async (c) =
       name,
       role,
       lastSignInAt: new Date(),
+      emailVerified: true,
     });
   } else {
     await updateLastSignIn(user.id);

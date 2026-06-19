@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -24,14 +24,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { registerSchema, type RegisterForm } from "@/lib/form-schemas";
-import { ArrowLeft, Loader2, UserPlus } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, Loader2, UserPlus, Mail, ShieldCheck } from "lucide-react";
 
 export default function Register() {
   const { isAuthenticated, user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [role, setRole] = useState<"student" | "teacher">("student");
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+  const [code, setCode] = useState("");
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const codeInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
@@ -50,10 +53,24 @@ export default function Register() {
   const utils = trpc.useUtils();
   const registerMutation = trpc.auth.register.useMutation({
     onSuccess: (data) => {
+      if (data.requiresVerification) {
+        setRegisteredEmail(data.email);
+        setTimeout(() => codeInputRef.current?.focus(), 100);
+      }
+    },
+  });
+
+  const verifyMutation = trpc.auth.verifyEmail.useMutation({
+    onSuccess: (data) => {
       utils.invalidate();
       navigate(data.role === "teacher" ? "/admin" : "/dashboard");
     },
+    onError: (err) => {
+      setVerifyError(err.message);
+    },
   });
+
+  const resendMutation = trpc.auth.resendVerificationCode.useMutation();
 
   useEffect(() => {
     if (isAuthenticated && !authLoading && user) {
@@ -65,10 +82,103 @@ export default function Register() {
     registerMutation.mutate(data);
   };
 
+  const handleVerify = () => {
+    if (!registeredEmail || code.length !== 6) return;
+    setVerifyError(null);
+    verifyMutation.mutate({ email: registeredEmail, code });
+  };
+
+  const handleResend = () => {
+    if (registeredEmail) {
+      resendMutation.mutate({ email: registeredEmail });
+    }
+  };
+
+  const handleCodeChange = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 6);
+    setCode(digits);
+    setVerifyError(null);
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-[#e8f5e9] flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-[#00695c] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (registeredEmail) {
+    return (
+      <div className="min-h-screen bg-[#e8f5e9] flex items-center justify-center px-6">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#00695c]/10 mb-4">
+              <Mail className="w-8 h-8 text-[#00695c]" />
+            </div>
+            <h1 className="text-2xl font-bold text-[#2c3e2d] mb-2">Verify your email</h1>
+            <p className="text-[#78909c]">
+              We sent a verification code to{" "}
+              <span className="font-medium text-[#2c3e2d]">{registeredEmail}</span>
+            </p>
+          </div>
+
+          <Card className="clay-card border-0">
+            <CardContent className="p-8">
+              <div className="space-y-4">
+                <div>
+                  <FormLabel className="text-sm font-medium text-[#2c3e2d]">Verification Code</FormLabel>
+                  <Input
+                    ref={codeInputRef}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="000000"
+                    className="rounded-xl h-14 border-[#00695c]/15 text-center text-2xl tracking-[8px] font-bold mt-1.5"
+                    value={code}
+                    onChange={(e) => handleCodeChange(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && code.length === 6) handleVerify(); }}
+                  />
+                  <p className="text-xs text-[#78909c] mt-1.5">Enter the 6-digit code sent to your email</p>
+                </div>
+
+                {verifyError && (
+                  <p className="text-sm text-red-500">{verifyError}</p>
+                )}
+
+                {verifyMutation.error && (
+                  <p className="text-sm text-red-500">{verifyMutation.error.message}</p>
+                )}
+
+                <Button
+                  className="w-full rounded-full bg-[#00695c] hover:bg-[#004d40] h-11 font-semibold"
+                  disabled={code.length !== 6 || verifyMutation.isPending}
+                  onClick={handleVerify}
+                >
+                  {verifyMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-4 h-4 mr-2" />
+                      Verify Email
+                    </>
+                  )}
+                </Button>
+
+                <p className="text-center text-sm text-[#78909c]">
+                  Did not receive the code?{" "}
+                  <button
+                    type="button"
+                    className="text-[#00695c] hover:underline font-medium disabled:opacity-50"
+                    disabled={resendMutation.isPending}
+                    onClick={handleResend}
+                  >
+                    {resendMutation.isPending ? "Sending..." : "Resend"}
+                  </button>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }

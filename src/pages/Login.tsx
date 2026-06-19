@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate, Link } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -17,14 +17,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { loginSchema, type LoginForm } from "@/lib/form-schemas";
-import { ArrowLeft, Loader2, LogIn, User, Shield } from "lucide-react";
+import { ArrowLeft, Loader2, LogIn } from "lucide-react";
 
 export default function Login() {
   const { isAuthenticated, user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [devLoading, setDevLoading] = useState(false);
-
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -52,21 +50,6 @@ export default function Login() {
   const onSubmit = (data: LoginForm) => {
     loginMutation.mutate(data);
   };
-
-  async function devLogin(role: "student" | "teacher") {
-    setDevLoading(true);
-    try {
-      const resp = await fetch("/api/dev-login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role, name: `Dev ${role === "teacher" ? "Teacher" : "Student"}` }),
-      });
-      if (!resp.ok) throw new Error("Dev login failed");
-      window.location.href = role === "teacher" ? "/admin" : "/dashboard";
-    } catch {
-      setDevLoading(false);
-    }
-  }
 
   if (authLoading) {
     return (
@@ -171,36 +154,6 @@ export default function Login() {
                 {t("login.createAccount")}
               </Link>
             </p>
-
-            <div className="relative py-4">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-[#78909c]/20" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-3 text-[#78909c]">DEV</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant="outline"
-                className="rounded-full h-11 border-[#00695c]/15 hover:bg-[#00695c]/6"
-                disabled={devLoading}
-                onClick={() => devLogin("student")}
-              >
-                <User className="w-4 h-4 mr-2" />
-                {t("login.devLoginStudent")}
-              </Button>
-              <Button
-                variant="outline"
-                className="rounded-full h-11 border-[#00695c]/15 hover:bg-[#00695c]/6"
-                disabled={devLoading}
-                onClick={() => devLogin("teacher")}
-              >
-                <Shield className="w-4 h-4 mr-2" />
-                {t("login.devLoginTeacher")}
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </div>

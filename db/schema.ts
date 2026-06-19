@@ -31,6 +31,7 @@ export const users = mysqlTable("users", {
     .notNull()
     .$onUpdate(() => new Date()),
   lastSignInAt: timestamp("lastSignInAt").defaultNow().notNull(),
+  emailVerified: boolean("emailVerified").default(false).notNull(),
 }, (table) => ({
   emailIdx: index("users_email_idx").on(table.email),
   centerIdIdx: index("users_centerId_idx").on(table.centerId),
@@ -39,6 +40,19 @@ export const users = mysqlTable("users", {
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+
+export const emailVerificationCodes = mysqlTable("email_verification_codes", {
+  id: serial("id").primaryKey(),
+  userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+  code: varchar("code", { length: 6 }).notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("evc_userId_idx").on(table.userId),
+}));
+
+export type EmailVerificationCode = typeof emailVerificationCodes.$inferSelect;
+export type InsertEmailVerificationCode = typeof emailVerificationCodes.$inferInsert;
 
 export const centers = mysqlTable("centers", {
   id: serial("id").primaryKey(),
