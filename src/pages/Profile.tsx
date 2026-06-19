@@ -27,6 +27,7 @@ import {
 import { profileSchema, adminProfileSchema, type ProfileForm, type AdminProfileForm } from "@/lib/form-schemas";
 import { ArrowLeft, Loader2, Save, User, Upload } from "lucide-react";
 import { useState, useRef } from "react";
+import { ImageCropper } from "@/components/ImageCropper";
 
 export default function Profile() {
   const { t } = useTranslation();
@@ -62,25 +63,24 @@ export default function Profile() {
   const getUploadUrl = trpc.upload.getUrl.useMutation();
   const hiddenInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
 
   const updateAvatarMutation = trpc.auth.updateProfile.useMutation({
     onSuccess: () => utils.auth.me.invalidate(),
   });
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const uploadCroppedAvatar = async (blob: Blob) => {
     setUploading(true);
     try {
       const { uploadUrl, publicUrl } = await getUploadUrl.mutateAsync({
-        fileName: file.name,
-        contentType: file.type,
-        fileSize: file.size,
+        fileName: "avatar.jpg",
+        contentType: "image/jpeg",
+        fileSize: blob.size,
       });
       await fetch(uploadUrl, {
         method: "PUT",
-        body: file,
-        headers: { "Content-Type": file.type },
+        body: blob,
+        headers: { "Content-Type": "image/jpeg" },
       });
       if (isAdmin) {
         updateAvatarMutation.mutate({
@@ -92,8 +92,16 @@ export default function Profile() {
       }
     } finally {
       setUploading(false);
-      if (hiddenInput.current) hiddenInput.current.value = "";
     }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setCropImageSrc(reader.result as string);
+    reader.readAsDataURL(file);
+    if (hiddenInput.current) hiddenInput.current.value = "";
   };
 
   const updateMutation = trpc.auth.updateProfile.useMutation({
@@ -119,7 +127,7 @@ export default function Profile() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#e8f5e9] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-[#00695c] border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -128,7 +136,7 @@ export default function Profile() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[#e8f5e9]">
+    <div className="min-h-screen">
       <Navigation />
 
       <div className="pt-24 pb-16 px-6">
@@ -159,7 +167,8 @@ export default function Profile() {
                       <img
                         src={form.watch("avatar")}
                         alt=""
-                        className="w-full h-full rounded-full object-cover"
+                        className="w-full h-full rounded-full object-cover cursor-pointer"
+                        onClick={() => setCropImageSrc(form.watch("avatar"))}
                       />
                     ) : (
                       <User className="w-10 h-10 text-[#00695c]" />
@@ -180,6 +189,15 @@ export default function Profile() {
                   >
                     {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
                   </button>
+
+                  {cropImageSrc && (
+                    <ImageCropper
+                      open={!!cropImageSrc}
+                      onOpenChange={(open) => { if (!open) setCropImageSrc(null); }}
+                      imageSrc={cropImageSrc}
+                      onCropComplete={(blob) => uploadCroppedAvatar(blob)}
+                    />
+                  )}
                 </div>
                 <div className="pt-1">
                   <h2 className="text-lg font-semibold text-[#2c3e2d]">

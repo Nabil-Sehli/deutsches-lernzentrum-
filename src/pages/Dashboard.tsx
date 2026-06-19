@@ -4,6 +4,7 @@ import Navigation from "@/components/Navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/providers/trpc";
+import { CountdownTimer } from "@/components/CountdownTimer";
 import {
   Card,
   CardContent,
@@ -142,7 +143,7 @@ export default function Dashboard() {
       : 0;
 
   return (
-    <div className="min-h-screen bg-[#e8f5e9]">
+    <div className="min-h-screen">
       <Navigation />
 
       <div className="pt-24 pb-16 px-6">
@@ -595,6 +596,7 @@ function StudentAssignments() {
         {data.map((a) => {
           const submitted = !!a.submission;
           const graded = a.submission?.grade != null;
+          const isExpired = a.dueDate && new Date(a.dueDate) < new Date();
 
           return (
             <Card key={a.id} className="clay-card border-0">
@@ -604,7 +606,10 @@ function StudentAssignments() {
                     <h3 className="font-semibold text-[#2c3e2d]">{a.title}</h3>
                     {a.description && <p className="text-sm text-[#78909c] mt-1">{a.description}</p>}
                     {a.dueDate && (
-                      <p className="text-xs text-[#78909c] mt-2">Due: {new Date(a.dueDate).toLocaleDateString()}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs text-[#78909c]">Due:</span>
+                        <CountdownTimer dueDate={a.dueDate} />
+                      </div>
                     )}
                     <div className="flex items-center gap-3 mt-3">
                       {submitted ? (
@@ -612,6 +617,8 @@ function StudentAssignments() {
                           ✓ Submitted
                           {graded && ` — Grade: ${a.submission!.grade}/100`}
                         </span>
+                      ) : isExpired ? (
+                        <span className="text-xs text-red-500 font-medium">Expired</span>
                       ) : (
                         <button
                           onClick={() => setSelectedAssignment(selectedAssignment === a.id ? null : a.id)}
@@ -626,7 +633,7 @@ function StudentAssignments() {
                         <span className="font-medium">Feedback:</span> {a.submission!.feedback}
                       </p>
                     )}
-                    {selectedAssignment === a.id && !submitted && (
+                    {selectedAssignment === a.id && !submitted && !isExpired && (
                       <div className="mt-3 space-y-2">
                         <textarea
                           value={text}

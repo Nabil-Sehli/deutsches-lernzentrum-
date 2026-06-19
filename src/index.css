@@ -42,8 +42,21 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background: linear-gradient(to bottom, #f8f3ed, #e0efe5);
     font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: url('/germany-silhouette.svg') center / 35% no-repeat;
+    opacity: 0.04;
+    pointer-events: none;
+    z-index: 0;
   }
   html {
     scroll-behavior: smooth;

@@ -89,6 +89,15 @@ export const assignmentsRouter = createRouter({
       const db = getDb();
       if (!ctx.user.centerId) throw new TRPCError({ code: "NOT_FOUND", message: "You are not part of a center" });
 
+      const [assignment] = await db
+        .select()
+        .from(assignments)
+        .where(eq(assignments.id, input.assignmentId));
+      if (!assignment) throw new TRPCError({ code: "NOT_FOUND", message: "Assignment not found" });
+      if (assignment.dueDate && new Date(assignment.dueDate) < new Date()) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "The due date for this assignment has passed" });
+      }
+
       const [existing] = await db
         .select()
         .from(submissions)

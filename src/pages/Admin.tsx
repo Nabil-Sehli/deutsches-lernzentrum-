@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/table";
 import { AdminSkeleton } from "@/components/AdminSkeleton";
 import { VideoCall } from "@/components/VideoCall";
+import { CountdownTimer } from "@/components/CountdownTimer";
 import {
   BookOpen,
   Users,
@@ -99,6 +100,7 @@ import {
   type QuestionForm,
 } from "@/lib/form-schemas";
 import { countries } from "@/data/countries";
+import { ImageCropper } from "@/components/ImageCropper";
 
 function CreateLessonDialog({
   open,
@@ -526,7 +528,7 @@ export default function Admin() {
   };
 
   return (
-    <div className="min-h-screen bg-[#e8f5e9]">
+    <div className="min-h-screen">
       <Navigation />
 
       <div className="pt-24 pb-16 px-6">
@@ -1200,9 +1202,10 @@ function AssignmentsPanel() {
                     <h3 className="font-semibold text-[#2c3e2d]">{a.title}</h3>
                     {a.description && <p className="text-sm text-[#78909c] mt-1">{a.description}</p>}
                     {a.dueDate && (
-                      <p className="text-xs text-[#78909c] mt-2">
-                        Due: {new Date(a.dueDate).toLocaleDateString()}
-                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs text-[#78909c]">Due:</span>
+                        <CountdownTimer dueDate={a.dueDate} />
+                      </div>
                     )}
                   </div>
                   <button
@@ -1490,6 +1493,35 @@ function CenterSettingsForm({ centerId }: { centerId: number }) {
   const [albumImages, setAlbumImages] = useState<string[]>([]);
   const [themeColor, setThemeColor] = useState("#e8f5e9");
   const [uploading, setUploading] = useState<"logo" | "banner" | "album" | null>(null);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [cropField, setCropField] = useState<"logo" | "banner" | null>(null);
+
+  const uploadCroppedImage = async (blob: Blob) => {
+    const field = cropField;
+    if (!field) return;
+    setUploading(field);
+    try {
+      const { uploadUrl, publicUrl } = await getUploadUrl.mutateAsync({
+        fileName: `${field}.jpg`,
+        contentType: "image/jpeg",
+        fileSize: blob.size,
+      });
+      await fetch(uploadUrl, {
+        method: "PUT",
+        body: blob,
+        headers: { "Content-Type": "image/jpeg" },
+      });
+      if (field === "logo") setLogo(publicUrl);
+      else setBanner(publicUrl);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Upload failed";
+      alert(`Failed to upload ${field}: ${msg}`);
+    } finally {
+      setUploading(null);
+      setCropImageSrc(null);
+      setCropField(null);
+    }
+  };
 
   // Validation helpers
   const validateEmail = (email: string) => {
@@ -1559,30 +1591,6 @@ function CenterSettingsForm({ centerId }: { centerId: number }) {
       utils.center.dashboardStats.invalidate();
     },
   });
-
-  const handleImageUpload = async (field: "logo" | "banner", file: File) => {
-    setUploading(field);
-    try {
-      const { uploadUrl, publicUrl } = await getUploadUrl.mutateAsync({
-        fileName: file.name,
-        contentType: file.type,
-        fileSize: file.size,
-      });
-      const res = await fetch(uploadUrl, {
-        method: "PUT",
-        body: file,
-        headers: { "Content-Type": file.type },
-      });
-      if (!res.ok) throw new Error(`Upload failed (${res.status})`);
-      if (field === "logo") setLogo(publicUrl);
-      else setBanner(publicUrl);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Upload failed";
-      alert(`Failed to upload ${field}: ${msg}`);
-    } finally {
-      setUploading(null);
-    }
-  };
 
   const handleAlbumUpload = async (files: FileList) => {
     const fileArray = Array.from(files);
@@ -1684,12 +1692,22 @@ function CenterSettingsForm({ centerId }: { centerId: number }) {
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) handleImageUpload("logo", file);
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    setCropImageSrc(reader.result as string);
+                    setCropField("logo");
+                  };
+                  reader.readAsDataURL(file);
+                }
                 e.target.value = "";
               }}
             />
             {logo ? (
-              <div className="w-24 h-24 rounded-2xl overflow-hidden border border-[#00695c]/10">
+              <div
+                className="w-24 h-24 rounded-2xl overflow-hidden border border-[#00695c]/10 cursor-pointer"
+                onClick={() => { setCropImageSrc(logo); setCropField("logo"); }}
+              >
                 <img src={logo} alt="logo" className="w-full h-full object-cover" />
               </div>
             ) : (
@@ -1737,12 +1755,22 @@ function CenterSettingsForm({ centerId }: { centerId: number }) {
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) handleImageUpload("banner", file);
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    setCropImageSrc(reader.result as string);
+                    setCropField("banner");
+                  };
+                  reader.readAsDataURL(file);
+                }
                 e.target.value = "";
               }}
             />
             {banner ? (
-              <div className="w-full h-20 rounded-2xl overflow-hidden border border-[#00695c]/10">
+              <div
+                className="w-full h-20 rounded-2xl overflow-hidden border border-[#00695c]/10 cursor-pointer"
+                onClick={() => { setCropImageSrc(banner); setCropField("banner"); }}
+              >
                 <img src={banner} alt="banner" className="w-full h-full object-cover" />
               </div>
             ) : (
@@ -1753,6 +1781,17 @@ function CenterSettingsForm({ centerId }: { centerId: number }) {
           </CardContent>
         </Card>
       </div>
+
+      {cropImageSrc && cropField && (
+        <ImageCropper
+          open={!!cropImageSrc}
+          onOpenChange={(open) => { if (!open) { setCropImageSrc(null); setCropField(null); } }}
+          imageSrc={cropImageSrc}
+          onCropComplete={(blob) => uploadCroppedImage(blob)}
+          aspect={cropField === "logo" ? 1 : 16 / 9}
+          shape={cropField === "logo" ? "round" : "rect"}
+        />
+      )}
 
       {/* Basic Info */}
       <Card className="clay-card border-0">
