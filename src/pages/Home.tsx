@@ -1183,6 +1183,10 @@ export default function Home() {
                   {[
                     t("home.planYearlyFeature1"),
                     t("home.planYearlyFeature2"),
+                    t("home.planYearlyFeature3"),
+                    t("home.planYearlyFeature4"),
+                    t("home.planYearlyFeature5"),
+                    t("home.planYearlyFeature6"),
                   ].map(f => (
                     <li
                       key={f}
