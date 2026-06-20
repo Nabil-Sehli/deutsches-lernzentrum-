@@ -568,6 +568,7 @@ export default function Home() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
+  const canGoToDashboard = isAuthenticated && (user?.role !== "teacher" || user?.centerId);
   const isTeacher = user?.role === "teacher";
 
   const stat1 = useCountUp(120, 1500);
@@ -869,10 +870,10 @@ export default function Home() {
               ))}
             </div>
             <Link
-              to="/register-center"
+              to={canGoToDashboard ? "/dashboard" : "/register-center"}
               className="inline-flex items-center px-7 py-3 rounded-full bg-white text-[#445E5D] font-semibold hover:bg-[#F8F4EB] transition-all hover:scale-[1.02]"
             >
-              {t("home.registerYourCenter")}
+              {canGoToDashboard ? t("home.goToDashboard") : t("home.registerYourCenter")}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
           </SectionReveal>
@@ -1099,9 +1100,12 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                <button className="w-full py-2.5 rounded-full bg-[#F8F4EB] text-[#445E5D] font-semibold hover:bg-[#445E5D] hover:text-white transition-all">
+                <Link
+                  to="/register"
+                  className="block w-full py-2.5 rounded-full bg-[#F8F4EB] text-[#445E5D] font-semibold hover:bg-[#445E5D] hover:text-white transition-all text-center"
+                >
                   {t("home.getStartedBtn")}
-                </button>
+                </Link>
               </div>
             </SectionReveal>
 
@@ -1145,13 +1149,12 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                <button
-                  disabled
-                  className="w-full py-2.5 rounded-full bg-white/20 text-white/50 font-semibold cursor-not-allowed"
-                  title={t("home.comingSoon")}
+                <Link
+                  to="/register"
+                  className="block w-full py-2.5 rounded-full bg-white text-[#445E5D] font-semibold hover:bg-[#F8F4EB] transition-all text-center"
                 >
                   {t("home.startProTrial")}
-                </button>
+                </Link>
               </div>
             </SectionReveal>
 
@@ -1188,10 +1191,10 @@ export default function Home() {
                   ))}
                 </ul>
                 <Link
-                  to="/register-center"
+                  to={canGoToDashboard ? "/dashboard" : "/register-center"}
                   className="block w-full py-2.5 rounded-full bg-[#F8F4EB] text-[#445E5D] font-semibold hover:bg-[#445E5D] hover:text-white transition-all text-center"
                 >
-                  {t("home.registerCenterBtn")}
+                  {canGoToDashboard ? t("home.goToDashboard") : t("home.registerCenterBtn")}
                 </Link>
               </div>
             </SectionReveal>
@@ -1231,10 +1234,10 @@ export default function Home() {
               {t("home.ctaGetStarted")}
             </Link>
             <Link
-              to="/register-center"
+              to={canGoToDashboard ? "/dashboard" : "/register-center"}
               className="py-3 font-semibold text-white transition-all border rounded-full px-7 bg-white/12 border-white/30 hover:bg-white/20"
             >
-              {t("home.ctaRegisterCenter")}
+              {canGoToDashboard ? t("home.goToDashboard") : t("home.ctaRegisterCenter")}
             </Link>
           </div>
         </div>
