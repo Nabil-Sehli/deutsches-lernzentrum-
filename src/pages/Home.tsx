@@ -1090,6 +1090,7 @@ export default function Home() {
                     t("home.planFreeFeature2"),
                     t("home.planFreeFeature3"),
                     t("home.planFreeFeature4"),
+                    t("home.planFreeFeature5"),
                   ].map(f => (
                     <li
                       key={f}
@@ -1109,7 +1110,7 @@ export default function Home() {
               </div>
             </SectionReveal>
 
-            {/* Pro */}
+            {/* Monthly */}
             <SectionReveal delay={0.1}>
               <div
                 className="p-8 h-full flex flex-col bg-[#445E5D] relative rounded-3xl"
@@ -1119,26 +1120,29 @@ export default function Home() {
                 }}
               >
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#B1D4CD] text-[#182E21] text-[11px] font-semibold px-4 py-1 rounded-xl">
-                  {t("home.planProPopular")}
+                  {t("home.planMonthlyPopular")}
                 </span>
                 <h3 className="mb-2 text-xl font-semibold text-white">
-                  {t("home.planPro")}
+                  {t("home.planMonthly")}
                 </h3>
                 <div className="mb-6">
                   <span className="text-4xl font-bold text-white">
-                    {t("home.planProPrice")}
+                    {t("home.planMonthlyPrice")}
                   </span>
                   <span className="text-base text-white/70">
-                    {t("home.planProPerMonth")}
+                    {t("home.planMonthlyPerMonth")}
                   </span>
                 </div>
                 <ul className="flex flex-col flex-1 gap-3 mb-8">
                   {[
-                    t("home.planProFeature1"),
-                    t("home.planProFeature2"),
-                    t("home.planProFeature3"),
-                    t("home.planProFeature4"),
-                    t("home.planProFeature5"),
+                    t("home.planMonthlyFeature1"),
+                    t("home.planMonthlyFeature2"),
+                    t("home.planMonthlyFeature3"),
+                    t("home.planMonthlyFeature4"),
+                    t("home.planMonthlyFeature5"),
+                    t("home.planMonthlyFeature6"),
+                    t("home.planMonthlyFeature7"),
+                    t("home.planMonthlyFeature8"),
                   ].map(f => (
                     <li
                       key={f}
@@ -1158,28 +1162,27 @@ export default function Home() {
               </div>
             </SectionReveal>
 
-            {/* Center */}
+            {/* Yearly */}
             <SectionReveal delay={0.2}>
-              <div className="flex flex-col h-full p-8 clay-card">
+              <div className="flex flex-col h-full p-8 clay-card relative">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#445E5D] text-white text-[11px] font-semibold px-4 py-1 rounded-xl">
+                  {t("home.planYearlyPopular")}
+                </span>
                 <h3 className="text-xl font-semibold text-[#182E21] mb-2">
-                  {t("home.planCenter")}
+                  {t("home.planYearly")}
                 </h3>
                 <div className="mb-6">
                   <span className="text-4xl font-bold text-[#445E5D]">
-                    {t("home.planCenterPrice")}
+                    {t("home.planYearlyPrice")}
                   </span>
                   <span className="text-base text-[#8A9D99]">
-                    {t("home.planCenterPerMonth")}
+                    {t("home.planYearlyPerMonth")}
                   </span>
                 </div>
                 <ul className="flex flex-col flex-1 gap-3 mb-8">
                   {[
-                    t("home.planCenterFeature1"),
-                    t("home.planCenterFeature2"),
-                    t("home.planCenterFeature3"),
-                    t("home.planCenterFeature4"),
-                    t("home.planCenterFeature5"),
-                    t("home.planCenterFeature6"),
+                    t("home.planYearlyFeature1"),
+                    t("home.planYearlyFeature2"),
                   ].map(f => (
                     <li
                       key={f}
