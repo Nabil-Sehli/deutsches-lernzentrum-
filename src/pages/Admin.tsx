@@ -2289,6 +2289,13 @@ function CenterSettingsForm({ centerId }: { centerId: number }) {
               </span>
             </div>
             <div className="flex items-center justify-between p-3 rounded-lg bg-white/50">
+              <span className="text-sm text-[#2c3e2d]">Assignments per week</span>
+              <span className="font-semibold text-[#00695c]">
+                {settings?.assignmentCount ?? 0}/
+                {settings?.plan === "premium" ? "∞" : "5"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-white/50">
               <span className="text-sm text-[#2c3e2d]">Meeting Rooms</span>
               <span
                 className={`font-semibold ${
@@ -2408,33 +2415,81 @@ function UpgradeDialog({ onUpgrade, isPending }: { onUpgrade: () => void; isPend
         onClick={() => setOpen(true)}
         className="rounded-full bg-[#00695c] hover:bg-[#004d40] font-semibold w-full"
       >
-        {t("admin.planUpgrade")} - €49.99/month
+        {t("admin.planUpgrade")} - From €9.99/month
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="rounded-3xl border-0 shadow-xl max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl text-[#2c3e2d]">Upgrade to Premium</DialogTitle>
+            <DialogTitle className="text-xl text-[#2c3e2d]">Upgrade Your Plan</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-6 py-2">
             <p className="text-sm text-[#78909c]">
-              Unlock all features with the Premium plan:
+              Choose the plan that fits your center:
             </p>
-            <ul className="space-y-2">
-              {[
-                "Unlimited students (no 10-student cap)",
-                "Unlimited videos (no 1/week limit)",
-                "Unlimited invite codes",
-                "Meeting rooms for live sessions",
-                "100 GB storage (vs 5 GB Free)",
-              ].map((feature) => (
-                <li key={feature} className="flex items-center gap-2 text-sm text-[#2c3e2d]">
-                  <span className="w-5 h-5 rounded-full bg-[#00695c]/10 flex items-center justify-center shrink-0">
-                    <span className="text-[#00695c] text-xs">✓</span>
-                  </span>
-                  {feature}
-                </li>
-              ))}
-            </ul>
+
+            {/* Monthly Plan */}
+            <div className="rounded-2xl border-2 border-[#00695c]/20 p-4 bg-white">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h4 className="font-semibold text-[#2c3e2d]">Monthly</h4>
+                  <p className="text-xs text-[#78909c]">Cancel after first month</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xl font-bold text-[#00695c]">€9.99</span>
+                  <span className="text-xs text-[#78909c]">/month</span>
+                </div>
+              </div>
+              <ul className="space-y-1.5">
+                {[
+                  "Unlimited students",
+                  "Unlimited videos, lessons & assignments",
+                  "Meeting rooms & community chat",
+                  "Progress analytics",
+                  "Priority support",
+                ].map((feature) => (
+                  <li key={feature} className="flex items-center gap-2 text-sm text-[#2c3e2d]">
+                    <span className="w-5 h-5 rounded-full bg-[#00695c]/10 flex items-center justify-center shrink-0">
+                      <span className="text-[#00695c] text-xs">✓</span>
+                    </span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Yearly Plan */}
+            <div className="rounded-2xl border-2 border-[#445E5D] p-4 bg-[#445E5D]/5">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-semibold text-[#2c3e2d]">Yearly</h4>
+                    <span className="text-[10px] font-semibold bg-[#445E5D] text-white px-2 py-0.5 rounded-full">BEST VALUE</span>
+                  </div>
+                  <p className="text-xs text-[#78909c]">Save ~€20/year</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xl font-bold text-[#00695c]">€99.99</span>
+                  <span className="text-xs text-[#78909c]">/year</span>
+                </div>
+              </div>
+              <ul className="space-y-1.5">
+                {[
+                  "Everything in Monthly",
+                  "Custom domain",
+                  "White-label branding",
+                  "Multiple admins",
+                  "AI agent access",
+                ].map((feature) => (
+                  <li key={feature} className="flex items-center gap-2 text-sm text-[#2c3e2d]">
+                    <span className="w-5 h-5 rounded-full bg-[#445E5D]/10 flex items-center justify-center shrink-0">
+                      <span className="text-[#445E5D] text-xs">✓</span>
+                    </span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
             <p className="text-xs text-[#78909c] italic">
               This is a simulated upgrade (no real payment). Your plan will be set to Premium for 30 days.
             </p>
@@ -2448,7 +2503,7 @@ function UpgradeDialog({ onUpgrade, isPending }: { onUpgrade: () => void; isPend
               className="w-full rounded-full bg-[#00695c] hover:bg-[#004d40] font-semibold"
             >
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              Simulate Upgrade to Premium
+              Upgrade to Premium
             </Button>
           </div>
         </DialogContent>

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createRouter, authedQuery } from "./middleware";
+import { createRouter, authedQuery, checkAssignmentLimit, incrementAssignmentCount } from "./middleware";
 import { getDb } from "./queries/connection";
 import { assignments, submissions, users, quizAttempts, lessons } from "@db/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -49,6 +49,8 @@ export const assignmentsRouter = createRouter({
       const db = getDb();
       if (!ctx.user.centerId) throw new TRPCError({ code: "NOT_FOUND", message: "You do not manage a center" });
 
+      await checkAssignmentLimit(ctx.user.centerId);
+
       const [a] = await db.insert(assignments).values({
         centerId: ctx.user.centerId,
         title: input.title,
@@ -56,6 +58,8 @@ export const assignmentsRouter = createRouter({
         lessonId: input.lessonId ?? null,
         dueDate: input.dueDate ? new Date(input.dueDate) : null,
       });
+
+      await incrementAssignmentCount(ctx.user.centerId);
 
       const students = await db
         .select({ id: users.id })

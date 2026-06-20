@@ -45,10 +45,10 @@ export const authedQuery = t.procedure.use(requireAuth);
 export const adminQuery = authedQuery.use(requireRole("teacher"));
 export const superAdminQuery = authedQuery.use(requireRole("admin"));
 
-export async function getCenterPlan(centerId: number): Promise<{ plan: "free" | "premium"; videoUploadCount: number; videoUploadWeek: number | null }> {
+export async function getCenterPlan(centerId: number): Promise<{ plan: "free" | "premium"; videoUploadCount: number; videoUploadWeek: number | null; assignmentCount: number; assignmentCountWeek: number | null }> {
   const db = getDb();
   const [center] = await db
-    .select({ plan: centers.plan, videoUploadCount: centers.videoUploadCount, videoUploadWeek: centers.videoUploadWeek })
+    .select({ plan: centers.plan, videoUploadCount: centers.videoUploadCount, videoUploadWeek: centers.videoUploadWeek, assignmentCount: centers.assignmentCount, assignmentCountWeek: centers.assignmentCountWeek })
     .from(centers)
     .where(eq(centers.id, centerId));
   if (!center) throw new TRPCError({ code: "NOT_FOUND", message: "Center not found" });
@@ -94,6 +94,32 @@ export async function incrementVideoUploadCount(centerId: number): Promise<void>
     await db.update(centers).set({ videoUploadCount: 1, videoUploadWeek: currentWeek }).where(eq(centers.id, centerId));
   } else {
     await db.update(centers).set({ videoUploadCount: center.videoUploadCount + 1 }).where(eq(centers.id, centerId));
+  }
+}
+
+export async function checkAssignmentLimit(centerId: number): Promise<void> {
+  const { plan, assignmentCount, assignmentCountWeek } = await getCenterPlan(centerId);
+  if (plan !== "free") return;
+
+  const currentWeek = getWeekNumber(new Date());
+  if (assignmentCountWeek === currentWeek && assignmentCount >= 5) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Free plan limited to 5 assignments per week. Upgrade to Premium for unlimited assignments.",
+    });
+  }
+}
+
+export async function incrementAssignmentCount(centerId: number): Promise<void> {
+  const db = getDb();
+  const currentWeek = getWeekNumber(new Date());
+  const center = await getCenterPlan(centerId);
+  if (center.plan !== "free") return;
+
+  if (center.assignmentCountWeek !== currentWeek) {
+    await db.update(centers).set({ assignmentCount: 1, assignmentCountWeek: currentWeek }).where(eq(centers.id, centerId));
+  } else {
+    await db.update(centers).set({ assignmentCount: center.assignmentCount + 1 }).where(eq(centers.id, centerId));
   }
 }
 

@@ -70,6 +70,8 @@ export const centers = mysqlTable("centers", {
   plan: mysqlEnum("plan", ["free", "premium"]).default("free").notNull(),
   videoUploadCount: int("videoUploadCount").default(0).notNull(),
   videoUploadWeek: int("videoUploadWeek"),
+  assignmentCount: int("assignmentCount").default(0).notNull(),
+  assignmentCountWeek: int("assignmentCountWeek"),
   adminId: bigint("adminId", { mode: "number", unsigned: true }).notNull(),
   slug: varchar("slug", { length: 255 }).notNull().unique(),
   requestId: bigint("requestId", { mode: "number", unsigned: true }),

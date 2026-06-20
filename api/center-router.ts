@@ -286,6 +286,8 @@ export const centerRouter = createRouter({
       plan: center.plan,
       videoUploadCount: center.videoUploadCount,
       videoUploadWeek: center.videoUploadWeek,
+      assignmentCount: center.assignmentCount,
+      assignmentCountWeek: center.assignmentCountWeek,
       studentCount: studentCount.count,
       lessonCount: lessonCount.count,
       // New usage analytics
@@ -294,6 +296,8 @@ export const centerRouter = createRouter({
         activeStudents: activeStudentCount.count,
         videoUploadCount: center.videoUploadCount,
         videoUploadWeek: center.videoUploadWeek,
+        assignmentCount: center.assignmentCount,
+        assignmentCountWeek: center.assignmentCountWeek,
         lessonsCreated: lessonCount.count,
         quizzesCreated: quizCount.count,
         storageUsedMB: storageUsedMB,
