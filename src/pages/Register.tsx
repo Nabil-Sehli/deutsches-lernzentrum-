@@ -121,13 +121,16 @@ export default function Register() {
               We sent a verification code to{" "}
               <span className="font-medium text-[#2c3e2d]">{registeredEmail}</span>
             </p>
+            <p className="text-xs text-amber-600 mt-2">
+              Check your spam folder if you don't see it within a minute.
+            </p>
           </div>
 
           <Card className="clay-card border-0">
             <CardContent className="p-8">
               <div className="space-y-4">
                 <div>
-                  <FormLabel className="text-sm font-medium text-[#2c3e2d]">Verification Code</FormLabel>
+                  <label className="text-sm font-medium text-[#2c3e2d]">Verification Code</label>
                   <Input
                     ref={codeInputRef}
                     type="text"
