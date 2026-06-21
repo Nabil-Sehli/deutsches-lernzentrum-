@@ -296,6 +296,28 @@ function CreateLessonDialog({
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="level"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("admin.levelCol")}</FormLabel>
+                  <FormControl>
+                    <select
+                      value={field.value ?? ""}
+                      onChange={(e) => field.onChange(e.target.value || undefined)}
+                      className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm text-[#2c3e2d]"
+                    >
+                      <option value="">{t("admin.allLevels")}</option>
+                      {(["a1", "a2", "b1", "b2", "c1", "c2"] as const).map((l) => (
+                        <option key={l} value={l}>{l.toUpperCase()}</option>
+                      ))}
+                    </select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <Button
               type="submit"
               disabled={mutation.isPending}
@@ -481,6 +503,12 @@ export default function Admin() {
     id: number; name: string | null; email: string; avatar: string | null;
     title: string | null; bio: string | null; createdAt: Date;
   } | null>(null);
+  const levels = ["a1", "a2", "b1", "b2", "c1", "c2"] as const;
+  const [levelFilter, setLevelFilter] = useState<string | null>(null);
+
+  const updateStudentLevel = trpc.center.updateStudentLevel.useMutation({
+    onSuccess: () => utils.center.myStudents.invalidate(),
+  });
 
   const { data: stats, isLoading: statsLoading } =
     trpc.center.dashboardStats.useQuery(undefined, {
@@ -747,6 +775,11 @@ export default function Admin() {
                               <h3 className="font-semibold text-[#2c3e2d]">
                                 {lesson.title}
                               </h3>
+                              {lesson.level && (
+                                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#00695c]/10 text-[#00695c]">
+                                  {lesson.level.toUpperCase()}
+                                </span>
+                              )}
                             </div>
                             <p className="text-sm text-[#78909c] mb-3 line-clamp-2">
                               {lesson.description}
@@ -827,18 +860,35 @@ export default function Admin() {
                     </p>
                   </Card>
                 ) : (
-                  <div className="clay-card overflow-hidden">
+                  <div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="text-sm font-medium text-[#445E5D]">{t("admin.filterByLevel")}</span>
+                      <select
+                        value={levelFilter ?? ""}
+                        onChange={(e) => setLevelFilter(e.target.value || null)}
+                        className="h-9 rounded-xl border border-[#00695c]/15 bg-white px-3 text-sm text-[#2c3e2d]"
+                      >
+                        <option value="">{t("admin.allLevels")}</option>
+                        {levels.map((l) => (
+                          <option key={l} value={l}>{l.toUpperCase()}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="clay-card overflow-hidden">
                     <Table>
                       <TableHeader>
                         <TableRow className="hover:bg-transparent">
                           <TableHead className="text-[#78909c]">{t("admin.name")}</TableHead>
                           <TableHead className="text-[#78909c]">{t("admin.email")}</TableHead>
+                          <TableHead className="text-[#78909c]">{t("admin.levelCol")}</TableHead>
                           <TableHead className="text-[#78909c]">{t("admin.joined")}</TableHead>
                           <TableHead className="text-[#78909c] w-[80px]">{t("admin.actions")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {students.map((s) => (
+                        {students
+                          .filter((s) => !levelFilter || s.level === levelFilter)
+                          .map((s) => (
                           <TableRow
                             key={s.id}
                             className="hover:bg-[#00695c]/3 cursor-pointer"
@@ -858,6 +908,19 @@ export default function Admin() {
                             </TableCell>
                             <TableCell className="text-[#78909c]">
                               {s.email ?? "-"}
+                            </TableCell>
+                            <TableCell>
+                              <select
+                                value={s.level ?? ""}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => updateStudentLevel.mutate({ studentId: s.id, level: (e.target.value || null) as "a1" | "a2" | "b1" | "b2" | "c1" | "c2" | null })}
+                                className="h-8 rounded-lg border border-[#00695c]/15 bg-white px-2 text-xs text-[#2c3e2d]"
+                              >
+                                <option value="">—</option>
+                                {levels.map((l) => (
+                                  <option key={l} value={l}>{l.toUpperCase()}</option>
+                                ))}
+                              </select>
                             </TableCell>
                             <TableCell className="text-[#78909c]">
                               {new Date(s.createdAt).toLocaleDateString()}
@@ -906,6 +969,7 @@ export default function Admin() {
                       </TableBody>
                     </Table>
                   </div>
+                </div>
                 )
               ) : !analytics || analytics.length === 0 ? (
                 <Card className="clay-card border-0 p-12 text-center">
@@ -915,6 +979,20 @@ export default function Admin() {
                   </p>
                 </Card>
               ) : (
+                <>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-sm font-medium text-[#445E5D]">{t("admin.filterByLevel")}</span>
+                  <select
+                    value={levelFilter ?? ""}
+                    onChange={(e) => setLevelFilter(e.target.value || null)}
+                    className="h-9 rounded-xl border border-[#00695c]/15 bg-white px-3 text-sm text-[#2c3e2d]"
+                  >
+                    <option value="">{t("admin.allLevels")}</option>
+                    {levels.map((l) => (
+                      <option key={l} value={l}>{l.toUpperCase()}</option>
+                    ))}
+                  </select>
+                </div>
                 <div className="clay-card overflow-hidden">
                   <Table>
                     <TableHeader>
@@ -934,7 +1012,9 @@ export default function Admin() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {analytics.map((a) => (
+                      {analytics
+                        .filter((a) => !levelFilter || a.studentLevel === levelFilter)
+                        .map((a) => (
                         <TableRow
                           key={a.id}
                           className="hover:bg-[#00695c]/3"
@@ -968,7 +1048,7 @@ export default function Admin() {
                     </TableBody>
                   </Table>
                 </div>
-              )}
+              </>)}
             </TabsContent>
 
             {selectedStudent && (
@@ -1083,6 +1163,20 @@ export default function Admin() {
                   </p>
                 </Card>
               ) : (
+                <>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-sm font-medium text-[#445E5D]">{t("admin.filterByLevel")}</span>
+                  <select
+                    value={levelFilter ?? ""}
+                    onChange={(e) => setLevelFilter(e.target.value || null)}
+                    className="h-9 rounded-xl border border-[#00695c]/15 bg-white px-3 text-sm text-[#2c3e2d]"
+                  >
+                    <option value="">{t("admin.allLevels")}</option>
+                    {levels.map((l) => (
+                      <option key={l} value={l}>{l.toUpperCase()}</option>
+                    ))}
+                  </select>
+                </div>
                 <div className="clay-card overflow-hidden">
                   <Table>
                     <TableHeader>
@@ -1102,7 +1196,9 @@ export default function Admin() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {analytics.map((a) => (
+                      {analytics
+                        .filter((a) => !levelFilter || a.studentLevel === levelFilter)
+                        .map((a) => (
                         <TableRow
                           key={a.id}
                           className="hover:bg-[#00695c]/3"
@@ -1136,7 +1232,7 @@ export default function Admin() {
                     </TableBody>
                   </Table>
                 </div>
-              )}
+              </>)}
             </TabsContent>
 
             {/* Meeting Rooms Tab */}
@@ -1229,6 +1325,7 @@ function AssignmentsPanel() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [level, setLevel] = useState("");
 
   const handleCreate = () => {
     if (!title.trim()) return;
@@ -1236,10 +1333,12 @@ function AssignmentsPanel() {
       title: title.trim(),
       description: description.trim() || undefined,
       dueDate: dueDate || undefined,
+      level: level ? (level as "a1" | "a2" | "b1" | "b2" | "c1" | "c2") : undefined,
     });
     setTitle("");
     setDescription("");
     setDueDate("");
+    setLevel("");
     setShowForm(false);
   };
 
@@ -1277,6 +1376,16 @@ function AssignmentsPanel() {
               onChange={(e) => setDueDate(e.target.value)}
               className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm"
             />
+            <select
+              value={level}
+              onChange={(e) => setLevel(e.target.value)}
+              className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm text-[#2c3e2d]"
+            >
+              <option value="">{t("admin.allLevels")}</option>
+              {(["a1", "a2", "b1", "b2", "c1", "c2"] as const).map((l) => (
+                <option key={l} value={l}>{l.toUpperCase()}</option>
+              ))}
+            </select>
             <Button
               onClick={handleCreate}
               disabled={createAssignment.isPending || !title.trim()}
@@ -1301,6 +1410,11 @@ function AssignmentsPanel() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-[#2c3e2d]">{a.title}</h3>
+                    {a.level && (
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#00695c]/10 text-[#00695c] ml-2">
+                        {a.level.toUpperCase()}
+                      </span>
+                    )}
                     {a.description && <p className="text-sm text-[#78909c] mt-1">{a.description}</p>}
                     {a.dueDate && (
                       <div className="flex items-center gap-2 mt-2">

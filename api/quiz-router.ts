@@ -141,6 +141,7 @@ export const quizRouter = createRouter({
           ...attempt,
           lessonTitle: lesson.title,
           studentName: student?.name ?? "Unknown",
+          studentLevel: student?.level ?? null,
         });
       }
     }

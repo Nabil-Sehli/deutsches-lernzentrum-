@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createRouter, authedQuery, checkAssignmentLimit, incrementAssignmentCount } from "./middleware";
 import { getDb } from "./queries/connection";
 import { assignments, submissions, users, quizAttempts, lessons } from "@db/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, or, isNull } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createNotification } from "./lib/notifications";
 
@@ -21,11 +21,20 @@ export const assignmentsRouter = createRouter({
     const db = getDb();
     if (!ctx.user.centerId) return [];
 
-    const all = await db
-      .select()
-      .from(assignments)
-      .where(eq(assignments.centerId, ctx.user.centerId))
-      .orderBy(desc(assignments.createdAt));
+    let all;
+    if (ctx.user.role === "student" && ctx.user.level) {
+      all = await db
+        .select()
+        .from(assignments)
+        .where(and(eq(assignments.centerId, ctx.user.centerId), or(eq(assignments.level, ctx.user.level), isNull(assignments.level))))
+        .orderBy(desc(assignments.createdAt));
+    } else {
+      all = await db
+        .select()
+        .from(assignments)
+        .where(eq(assignments.centerId, ctx.user.centerId))
+        .orderBy(desc(assignments.createdAt));
+    }
 
     const mySubmissions = await db
       .select()
@@ -43,6 +52,7 @@ export const assignmentsRouter = createRouter({
       title: z.string().min(1).max(255),
       description: z.string().optional(),
       lessonId: z.number().optional(),
+      level: z.enum(["a1", "a2", "b1", "b2", "c1", "c2"]).optional(),
       dueDate: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -56,6 +66,7 @@ export const assignmentsRouter = createRouter({
         title: input.title,
         description: input.description ?? null,
         lessonId: input.lessonId ?? null,
+        level: input.level ?? null,
         dueDate: input.dueDate ? new Date(input.dueDate) : null,
       });
 

@@ -44,6 +44,7 @@ export const createLessonSchema = z.object({
   title: z.string().min(1, "Title is required").max(255),
   description: z.string().optional(),
   videoUrl: z.string().min(1, "Video URL is required").max(512).url("Enter a valid URL"),
+  level: z.enum(["a1", "a2", "b1", "b2", "c1", "c2"]).optional(),
 });
 
 export type CreateLessonForm = z.infer<typeof createLessonSchema>;

@@ -209,6 +209,25 @@ export const centerRouter = createRouter({
       return { success: true };
     }),
 
+  updateStudentLevel: authedQuery
+    .input(z.object({ studentId: z.number(), level: z.enum(["a1", "a2", "b1", "b2", "c1", "c2"]).nullable() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      if (!ctx.user.centerId) throw new TRPCError({ code: "NOT_FOUND", message: "You do not manage a center" });
+
+      const [student] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, input.studentId));
+      if (!student || student.centerId !== ctx.user.centerId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Student not found in your center" });
+      }
+
+      await db.update(users).set({ level: input.level }).where(eq(users.id, input.studentId));
+
+      return { success: true };
+    }),
+
   settings: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
     if (!ctx.user.centerId) return null;

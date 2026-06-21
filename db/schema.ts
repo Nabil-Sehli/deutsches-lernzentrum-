@@ -22,6 +22,7 @@ export const users = mysqlTable("users", {
   sex: mysqlEnum("sex", ["male", "female"]),
   age: int("age"),
   city: varchar("city", { length: 255 }),
+  level: mysqlEnum("level", ["a1", "a2", "b1", "b2", "c1", "c2"]),
   bio: text("bio"),
   avatar: text("avatar"),
   centerId: bigint("centerId", { mode: "number", unsigned: true }),
@@ -115,6 +116,7 @@ export const lessons = mysqlTable("lessons", {
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
   videoUrl: varchar("videoUrl", { length: 512 }).notNull(),
+  level: mysqlEnum("level", ["a1", "a2", "b1", "b2", "c1", "c2"]),
   order: int("order").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")
@@ -359,6 +361,7 @@ export const assignments = mysqlTable("assignments", {
   lessonId: bigint("lessonId", { mode: "number", unsigned: true }),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
+  level: mysqlEnum("level", ["a1", "a2", "b1", "b2", "c1", "c2"]),
   dueDate: timestamp("dueDate"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createRouter, publicQuery, authedQuery, checkVideoUploadLimit, incrementVideoUploadCount } from "./middleware";
 import { getDb } from "./queries/connection";
 import { lessons, questions, quizAttempts, users } from "@db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or, isNull } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createNotification } from "./lib/notifications";
 
@@ -37,6 +37,13 @@ export const lessonRouter = createRouter({
   myLessons: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
     if (!ctx.user.centerId) return [];
+    if (ctx.user.role === "student" && ctx.user.level) {
+      return db
+        .select()
+        .from(lessons)
+        .where(and(eq(lessons.centerId, ctx.user.centerId), or(eq(lessons.level, ctx.user.level), isNull(lessons.level))))
+        .orderBy(lessons.order);
+    }
     return db
       .select()
       .from(lessons)
@@ -50,6 +57,7 @@ export const lessonRouter = createRouter({
         title: z.string().min(1).max(255),
         description: z.string().optional(),
         videoUrl: z.string().min(1).max(512),
+        level: z.enum(["a1", "a2", "b1", "b2", "c1", "c2"]).optional(),
         order: z.number().default(0),
       })
     )
@@ -65,6 +73,7 @@ export const lessonRouter = createRouter({
           title: input.title,
           description: input.description ?? "",
           videoUrl: input.videoUrl,
+          level: input.level ?? null,
           order: input.order,
         });
 
@@ -90,6 +99,7 @@ export const lessonRouter = createRouter({
         title: z.string().min(1).max(255).optional(),
         description: z.string().optional(),
         videoUrl: z.string().min(1).max(512).optional(),
+        level: z.enum(["a1", "a2", "b1", "b2", "c1", "c2"]).optional().nullable(),
         order: z.number().optional(),
       })
     )
@@ -111,6 +121,7 @@ export const lessonRouter = createRouter({
           title: input.title ?? lesson.title,
           description: input.description ?? lesson.description,
           videoUrl: input.videoUrl ?? lesson.videoUrl,
+          level: input.level !== undefined ? input.level : lesson.level,
           order: input.order ?? lesson.order,
         })
         .where(eq(lessons.id, input.id));
