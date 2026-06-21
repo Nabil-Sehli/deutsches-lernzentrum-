@@ -331,7 +331,12 @@
     "deleteWebhook": "Delete",
     "webhookTested": "Test successful",
     "webhookTestFailed": "Test failed",
-    "https-only": "Webhook URL must use HTTPS"
+    "https-only": "Webhook URL must use HTTPS",
+    "actions": "Actions",
+    "kickStudent": "Kick student",
+    "kickConfirmTitle": "Remove student from center?",
+    "kickConfirmDesc": "{{name}} will be removed from this center. The invite code they used will become available again.",
+    "kickConfirmAction": "Remove"
   },
   "registerCenter": {
     "dialogTitle": "Request a New Learning Center",

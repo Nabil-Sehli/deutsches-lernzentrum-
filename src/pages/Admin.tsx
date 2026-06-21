@@ -76,6 +76,7 @@ import {
   MessageSquare,
   Send,
   MoreHorizontal,
+  LogOut,
   Mail,
   Calendar,
 } from "lucide-react";
@@ -475,6 +476,7 @@ export default function Admin() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [studentsView, setStudentsView] = useState<"students" | "analytics">("students");
   const [assignmentsView, setAssignmentsView] = useState<"assignments" | "progress" | "submissions">("assignments");
+  const [kickStudentId, setKickStudentId] = useState<number | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<{
     id: number; name: string | null; email: string; avatar: string | null;
     title: string | null; bio: string | null; createdAt: Date;
@@ -515,6 +517,15 @@ export default function Admin() {
       utils.lesson.myLessons.invalidate();
       utils.center.dashboardStats.invalidate();
       setDeleteConfirmId(null);
+    },
+  });
+
+  const kickStudent = trpc.center.kickStudent.useMutation({
+    onSuccess: () => {
+      utils.center.myStudents.invalidate();
+      utils.center.dashboardStats.invalidate();
+      utils.invite.list.invalidate();
+      setKickStudentId(null);
     },
   });
 
@@ -823,6 +834,7 @@ export default function Admin() {
                           <TableHead className="text-[#78909c]">{t("admin.name")}</TableHead>
                           <TableHead className="text-[#78909c]">{t("admin.email")}</TableHead>
                           <TableHead className="text-[#78909c]">{t("admin.joined")}</TableHead>
+                          <TableHead className="text-[#78909c] w-[80px]">{t("admin.actions")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -849,6 +861,45 @@ export default function Admin() {
                             </TableCell>
                             <TableCell className="text-[#78909c]">
                               {new Date(s.createdAt).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <AlertDialog open={kickStudentId === s.id} onOpenChange={(open) => { if (!open) setKickStudentId(null); }}>
+                                <AlertDialogTrigger asChild>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setKickStudentId(s.id); }}
+                                    className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+                                    title={t("admin.kickStudent")}
+                                  >
+                                    <LogOut className="w-4 h-4" />
+                                  </button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="rounded-3xl border-0 shadow-xl">
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle className="text-[#2c3e2d]">
+                                      {t("admin.kickConfirmTitle")}
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription className="text-[#78909c]">
+                                      {t("admin.kickConfirmDesc", { name: s.name ?? t("admin.anonymous") })}
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel className="rounded-full border-[#00695c]/20 text-[#445E5D]">
+                                      {t("admin.cancel")}
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={(e) => { e.preventDefault(); kickStudent.mutate({ studentId: s.id }); }}
+                                      disabled={kickStudent.isPending}
+                                      className="rounded-full bg-red-600 hover:bg-red-700 text-white"
+                                    >
+                                      {kickStudent.isPending ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                      ) : (
+                                        t("admin.kickConfirmAction")
+                                      )}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -2407,6 +2458,7 @@ function CenterSettingsForm({ centerId }: { centerId: number }) {
 function UpgradeDialog({ onUpgrade, isPending }: { onUpgrade: () => void; isPending: boolean }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("monthly");
 
   return (
     <>
@@ -2422,24 +2474,39 @@ function UpgradeDialog({ onUpgrade, isPending }: { onUpgrade: () => void; isPend
           <DialogHeader>
             <DialogTitle className="text-xl text-[#2c3e2d]">Upgrade Your Plan</DialogTitle>
           </DialogHeader>
-          <div className="space-y-6 py-2">
+          <div className="space-y-4 py-2">
             <p className="text-sm text-[#78909c]">
               Choose the plan that fits your center:
             </p>
 
             {/* Monthly Plan */}
-            <div className="rounded-2xl border-2 border-[#00695c]/20 p-4 bg-white">
+            <button
+              type="button"
+              onClick={() => setSelectedPlan("monthly")}
+              className={`w-full text-left rounded-2xl border-2 p-4 bg-white transition-all ${
+                selectedPlan === "monthly"
+                  ? "border-[#00695c] shadow-md"
+                  : "border-[#00695c]/20 hover:border-[#00695c]/40"
+              }`}
+            >
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h4 className="font-semibold text-[#2c3e2d]">Monthly</h4>
-                  <p className="text-xs text-[#78909c]">Cancel after first month</p>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                      selectedPlan === "monthly" ? "border-[#00695c]" : "border-[#78909c]"
+                    }`}>
+                      {selectedPlan === "monthly" && <div className="w-2 h-2 rounded-full bg-[#00695c]" />}
+                    </div>
+                    <h4 className="font-semibold text-[#2c3e2d]">Monthly</h4>
+                  </div>
+                  <p className="text-xs text-[#78909c] ml-6">Cancel after first month</p>
                 </div>
                 <div className="text-right">
                   <span className="text-xl font-bold text-[#00695c]">€9.99</span>
                   <span className="text-xs text-[#78909c]">/month</span>
                 </div>
               </div>
-              <ul className="space-y-1.5">
+              <ul className="space-y-1.5 ml-6">
                 {[
                   "Unlimited students",
                   "Unlimited videos, lessons & assignments",
@@ -2455,24 +2522,37 @@ function UpgradeDialog({ onUpgrade, isPending }: { onUpgrade: () => void; isPend
                   </li>
                 ))}
               </ul>
-            </div>
+            </button>
 
             {/* Yearly Plan */}
-            <div className="rounded-2xl border-2 border-[#445E5D] p-4 bg-[#445E5D]/5">
+            <button
+              type="button"
+              onClick={() => setSelectedPlan("yearly")}
+              className={`w-full text-left rounded-2xl border-2 p-4 transition-all ${
+                selectedPlan === "yearly"
+                  ? "border-[#445E5D] shadow-md bg-[#445E5D]/5"
+                  : "border-[#445E5D]/20 bg-[#445E5D]/5 hover:border-[#445E5D]/40"
+              }`}
+            >
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <div className="flex items-center gap-2">
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                      selectedPlan === "yearly" ? "border-[#445E5D]" : "border-[#78909c]"
+                    }`}>
+                      {selectedPlan === "yearly" && <div className="w-2 h-2 rounded-full bg-[#445E5D]" />}
+                    </div>
                     <h4 className="font-semibold text-[#2c3e2d]">Yearly</h4>
                     <span className="text-[10px] font-semibold bg-[#445E5D] text-white px-2 py-0.5 rounded-full">BEST VALUE</span>
                   </div>
-                  <p className="text-xs text-[#78909c]">Save ~€20/year</p>
+                  <p className="text-xs text-[#78909c] ml-6">Save ~€20/year</p>
                 </div>
                 <div className="text-right">
                   <span className="text-xl font-bold text-[#00695c]">€99.99</span>
                   <span className="text-xs text-[#78909c]">/year</span>
                 </div>
               </div>
-              <ul className="space-y-1.5">
+              <ul className="space-y-1.5 ml-6">
                 {[
                   "Everything in Monthly",
                   "Custom domain",
@@ -2488,10 +2568,12 @@ function UpgradeDialog({ onUpgrade, isPending }: { onUpgrade: () => void; isPend
                   </li>
                 ))}
               </ul>
-            </div>
+            </button>
 
             <p className="text-xs text-[#78909c] italic">
-              This is a simulated upgrade (no real payment). Your plan will be set to Premium for 30 days.
+              {selectedPlan === "monthly"
+                ? "Monthly plan — cancel after the first month. No long-term commitment."
+                : "Yearly plan — best value. Billed annually at €99.99."}
             </p>
             <Button
               type="button"
@@ -2503,7 +2585,7 @@ function UpgradeDialog({ onUpgrade, isPending }: { onUpgrade: () => void; isPend
               className="w-full rounded-full bg-[#00695c] hover:bg-[#004d40] font-semibold"
             >
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              Upgrade to Premium
+              {selectedPlan === "monthly" ? "Upgrade to Monthly — €9.99/month" : "Upgrade to Yearly — €99.99/year"}
             </Button>
           </div>
         </DialogContent>

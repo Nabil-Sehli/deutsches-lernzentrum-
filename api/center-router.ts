@@ -188,6 +188,27 @@ export const centerRouter = createRouter({
       .where(eq(users.centerId, ctx.user.centerId));
   }),
 
+  kickStudent: authedQuery
+    .input(z.object({ studentId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      if (!ctx.user.centerId) throw new TRPCError({ code: "NOT_FOUND", message: "You do not manage a center" });
+
+      const [student] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, input.studentId));
+      if (!student || student.centerId !== ctx.user.centerId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Student not found in your center" });
+      }
+
+      await db.update(users).set({ centerId: null }).where(eq(users.id, input.studentId));
+
+      await db.update(inviteCodes).set({ usedBy: null, usedAt: null }).where(eq(inviteCodes.usedBy, input.studentId));
+
+      return { success: true };
+    }),
+
   settings: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
     if (!ctx.user.centerId) return null;
