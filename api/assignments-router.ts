@@ -177,6 +177,7 @@ export const assignmentsRouter = createRouter({
         gradedAt: submissions.gradedAt,
         studentName: users.name,
         studentTitle: users.title,
+        studentLevel: users.level,
         assignmentTitle: assignments.title,
       })
       .from(submissions)
@@ -199,6 +200,7 @@ export const assignmentsRouter = createRouter({
         email: users.email,
         avatar: users.avatar,
         title: users.title,
+        level: users.level,
         createdAt: users.createdAt,
       })
       .from(users)

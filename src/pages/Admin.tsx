@@ -732,13 +732,25 @@ export default function Admin() {
                 <h2 className="text-lg font-semibold text-[#2c3e2d]">
                   {t("admin.yourLessons")}
                 </h2>
-                <Button
-                  onClick={() => setCreateLessonOpen(true)}
-                  className="rounded-full bg-[#00695c] hover:bg-[#004d40] font-semibold"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  {t("admin.newLesson")}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={levelFilter ?? ""}
+                    onChange={(e) => setLevelFilter(e.target.value || null)}
+                    className="h-9 rounded-xl border border-[#00695c]/15 bg-white px-3 text-sm text-[#2c3e2d]"
+                  >
+                    <option value="">{t("admin.allLevels")}</option>
+                    {levels.map((l) => (
+                      <option key={l} value={l}>{l.toUpperCase()}</option>
+                    ))}
+                  </select>
+                  <Button
+                    onClick={() => setCreateLessonOpen(true)}
+                    className="rounded-full bg-[#00695c] hover:bg-[#004d40] font-semibold"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    {t("admin.newLesson")}
+                  </Button>
+                </div>
               </div>
 
               <CreateLessonDialog
@@ -765,7 +777,9 @@ export default function Admin() {
                 </Card>
               ) : (
                 <div className="space-y-4">
-                  {lessons.map((lesson) => (
+                  {lessons
+                    .filter((l) => !levelFilter || l.level === levelFilter)
+                    .map((lesson) => (
                     <Card key={lesson.id} className="clay-card border-0">
                       <CardContent className="p-5">
                         <div className="flex items-start justify-between gap-4">
@@ -1326,6 +1340,8 @@ function AssignmentsPanel() {
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [level, setLevel] = useState("");
+  const assignmentLevels = ["a1", "a2", "b1", "b2", "c1", "c2"] as const;
+  const [assignmentLevelFilter, setAssignmentLevelFilter] = useState<string | null>(null);
 
   const handleCreate = () => {
     if (!title.trim()) return;
@@ -1346,13 +1362,25 @@ function AssignmentsPanel() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-[#2c3e2d]">Assignments</h2>
-        <Button
-          onClick={() => setShowForm(!showForm)}
-          className="rounded-full bg-[#00695c] hover:bg-[#004d40] font-semibold"
-        >
-          <Plus className="w-4 h-4 mr-1" />
-          {showForm ? "Cancel" : "New Assignment"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <select
+            value={assignmentLevelFilter ?? ""}
+            onChange={(e) => setAssignmentLevelFilter(e.target.value || null)}
+            className="h-9 rounded-xl border border-[#00695c]/15 bg-white px-3 text-sm text-[#2c3e2d]"
+          >
+            <option value="">{t("admin.allLevels")}</option>
+            {assignmentLevels.map((l) => (
+              <option key={l} value={l}>{l.toUpperCase()}</option>
+            ))}
+          </select>
+          <Button
+            onClick={() => setShowForm(!showForm)}
+            className="rounded-full bg-[#00695c] hover:bg-[#004d40] font-semibold"
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            {showForm ? "Cancel" : "New Assignment"}
+          </Button>
+        </div>
       </div>
 
       {showForm && (
@@ -1404,7 +1432,9 @@ function AssignmentsPanel() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {assignments.map((a) => (
+          {assignments
+            .filter((a) => !assignmentLevelFilter || a.level === assignmentLevelFilter)
+            .map((a) => (
             <Card key={a.id} className="clay-card border-0">
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
@@ -1440,8 +1470,11 @@ function AssignmentsPanel() {
 }
 
 function ProgressPanel() {
+  const { t } = useTranslation();
   const { data: progress } = trpc.assignments.progress.useQuery();
   const [selectedStudent, setSelectedStudent] = useState<number | null>(null);
+  const progressLevels = ["a1", "a2", "b1", "b2", "c1", "c2"] as const;
+  const [progressLevelFilter, setProgressLevelFilter] = useState<string | null>(null);
 
   if (!progress || progress.length === 0) {
     return (
@@ -1457,9 +1490,23 @@ function ProgressPanel() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-[#2c3e2d]">Student Progress</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-[#2c3e2d]">Student Progress</h2>
+        <select
+          value={progressLevelFilter ?? ""}
+          onChange={(e) => setProgressLevelFilter(e.target.value || null)}
+          className="h-9 rounded-xl border border-[#00695c]/15 bg-white px-3 text-sm text-[#2c3e2d]"
+        >
+          <option value="">{t("admin.allLevels")}</option>
+          {progressLevels.map((l) => (
+            <option key={l} value={l}>{l.toUpperCase()}</option>
+          ))}
+        </select>
+      </div>
       <div className="grid grid-cols-1 gap-4">
-        {progress.map((p) => (
+        {progress
+          .filter((p) => !progressLevelFilter || p.student.level === progressLevelFilter)
+          .map((p) => (
           <Card key={p.student.id} className="clay-card border-0">
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
@@ -1501,6 +1548,7 @@ function ProgressPanel() {
 }
 
 function SubmissionsPanel() {
+  const { t } = useTranslation();
   const utils = trpc.useUtils();
   const { data: submissions, isLoading } = trpc.assignments.listSubmissions.useQuery();
   const gradeMutation = trpc.assignments.grade.useMutation({
@@ -1509,6 +1557,8 @@ function SubmissionsPanel() {
   const [gradingId, setGradingId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValues, setEditValues] = useState<Record<number, { grade: string; feedback: string }>>({});
+  const submissionLevels = ["a1", "a2", "b1", "b2", "c1", "c2"] as const;
+  const [submissionLevelFilter, setSubmissionLevelFilter] = useState<string | null>(null);
 
   const handleGrade = async (id: number) => {
     const val = editValues[id];
@@ -1530,16 +1580,21 @@ function SubmissionsPanel() {
     setEditingId(id);
   };
 
-  const grouped = useMemo(() => {
+  const filteredSubmissions = useMemo(() => {
     if (!submissions) return [];
-    const map = new Map<string, typeof submissions>();
-    for (const s of submissions) {
+    return submissions.filter((s) => !submissionLevelFilter || s.studentLevel === submissionLevelFilter);
+  }, [submissions, submissionLevelFilter]);
+
+  const grouped = useMemo(() => {
+    if (!filteredSubmissions) return [];
+    const map = new Map<string, typeof filteredSubmissions>();
+    for (const s of filteredSubmissions) {
       const key = s.assignmentTitle;
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(s);
     }
     return Array.from(map.entries());
-  }, [submissions]);
+  }, [filteredSubmissions]);
 
   if (isLoading) {
     return (
@@ -1566,7 +1621,19 @@ function SubmissionsPanel() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-[#2c3e2d]">Submissions</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-[#2c3e2d]">Submissions</h2>
+        <select
+          value={submissionLevelFilter ?? ""}
+          onChange={(e) => setSubmissionLevelFilter(e.target.value || null)}
+          className="h-9 rounded-xl border border-[#00695c]/15 bg-white px-3 text-sm text-[#2c3e2d]"
+        >
+          <option value="">{t("admin.allLevels")}</option>
+          {submissionLevels.map((l) => (
+            <option key={l} value={l}>{l.toUpperCase()}</option>
+          ))}
+        </select>
+      </div>
       {grouped.map(([title, subs]) => (
         <Card key={title} className="clay-card border-0 overflow-hidden">
           <CardContent className="p-0">
