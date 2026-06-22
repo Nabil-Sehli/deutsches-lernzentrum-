@@ -2,8 +2,9 @@ import { z } from "zod";
 import { createRouter, authedQuery, getCenterPlan, checkInviteLimit } from "./middleware";
 import { getDb } from "./queries/connection";
 import { inviteCodes, centers, users } from "@db/schema";
-import { eq, count } from "drizzle-orm";
+import { eq, count, and } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { createNotification } from "./lib/notifications";
 
 function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -104,6 +105,15 @@ export const inviteRouter = createRouter({
         .select()
         .from(centers)
         .where(eq(centers.id, invite.centerId));
+
+      const centerAdmins = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(and(eq(users.centerId, invite.centerId), eq(users.role, "teacher")));
+
+      await Promise.all(centerAdmins.map((admin) =>
+        createNotification(admin.id, "level_needed", "New Student Joined", `${ctx.user.name ?? "A student"} joined your center and needs a level assigned.`, "/admin")
+      ));
 
       return {
         success: true,

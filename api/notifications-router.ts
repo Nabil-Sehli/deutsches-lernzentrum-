@@ -3,7 +3,7 @@ import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { notifications } from "@db/schema";
 import { eq, desc, and, count } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
+
 
 export const notificationsRouter = createRouter({
   list: authedQuery

@@ -41,6 +41,8 @@ import {
   ExternalLink,
   Video,
   ClipboardList,
+  Bell,
+  AlertTriangle,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -388,8 +390,13 @@ export default function Dashboard() {
             </Card>
           )}
 
+          {/* Level Needed Warning */}
+          {myCenter && user.role === "student" && !user.level && (
+            <LevelNeededCard />
+          )}
+
           {/* Lessons */}
-          {myCenter && (
+          {myCenter && (user.role !== "student" || user.level) && (
             <>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-[#2c3e2d] flex items-center gap-2">
@@ -522,7 +529,7 @@ export default function Dashboard() {
           )}
 
           {/* Assignments */}
-          {myCenter && user?.role === "student" && (
+          {myCenter && user?.role === "student" && user?.level && (
             <StudentAssignments />
           )}
 
@@ -561,7 +568,7 @@ export default function Dashboard() {
           )}
 
           {/* Chat */}
-          {myCenter && <StudentChat />}
+          {myCenter && (user.role !== "student" || user.level) && <StudentChat />}
         </div>
       </div>
     </div>
@@ -661,6 +668,94 @@ function StudentAssignments() {
   );
 }
 
+function LevelNeededCard() {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const utils = trpc.useUtils();
+  const remindLevel = trpc.center.remindLevel.useMutation();
+
+  const levelRequestedAt = user?.levelRequestedAt ? new Date(user.levelRequestedAt) : null;
+  const twoHours = 2 * 60 * 60 * 1000;
+  const cooldownEnd = levelRequestedAt ? new Date(levelRequestedAt.getTime() + twoHours) : null;
+  const [remaining, setRemaining] = useState(
+    cooldownEnd ? Math.max(0, cooldownEnd.getTime() - Date.now()) : 0
+  );
+  const isCooldown = remaining > 0;
+
+  useEffect(() => {
+    if (!cooldownEnd || cooldownEnd.getTime() <= Date.now()) return;
+    const interval = setInterval(() => {
+      setRemaining(Math.max(0, cooldownEnd.getTime() - Date.now()));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [cooldownEnd]);
+
+  const formatTime = (ms: number) => {
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    if (h > 0) return `${h}h ${m}m ${s}s`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  };
+
+  const handleRemind = () => {
+    remindLevel.mutate(undefined, {
+      onSuccess: () => {
+        utils.invalidate();
+      },
+    });
+  };
+
+  return (
+    <Card className="clay-card border-0 mb-8 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
+      <CardContent className="p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-6 h-6 text-amber-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-[#2c3e2d] mb-1">
+              {t("dashboard.noLevelTitle")}
+            </h3>
+            <p className="text-sm text-[#78909c] mb-4">
+              {t("dashboard.noLevelDesc")}
+            </p>
+            {isCooldown ? (
+              <div className="text-xs text-amber-600 font-medium">
+                {t("dashboard.remindCooldown", { time: formatTime(remaining) })}
+              </div>
+            ) : (
+              <Button
+                onClick={handleRemind}
+                disabled={remindLevel.isPending}
+                className="rounded-full bg-[#00695c] hover:bg-[#004d40] text-sm h-9 px-5"
+              >
+                {remindLevel.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                ) : (
+                  <Bell className="w-4 h-4 mr-1" />
+                )}
+                {t("dashboard.remindTeacher")}
+              </Button>
+            )}
+            {remindLevel.isSuccess && (
+              <p className="text-xs text-green-600 font-medium mt-2">
+                {t("dashboard.remindSent")}
+              </p>
+            )}
+            {remindLevel.isError && (
+              <p className="text-xs text-red-500 font-medium mt-2">
+                {remindLevel.error.message}
+              </p>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 const EMOJI_LIST = ["👍", "❤️", "😂", "🎉", "🔥", "😮", "🙏", "💯"];
 
 function StudentChat() {
@@ -708,6 +803,7 @@ function StudentChat() {
 
   const handleSend = async () => {
     if (!text.trim() && !pendingImage) return;
+    const level = user?.level as "a1" | "a2" | "b1" | "b2" | "c1" | "c2" | undefined;
     if (pendingImage) {
       setUploading(true);
       try {
@@ -717,7 +813,7 @@ function StudentChat() {
           fileSize: pendingImage.file.size,
         });
         await fetch(uploadUrl, { method: "PUT", body: pendingImage.file, headers: { "Content-Type": pendingImage.file.type } });
-        sendMessage.mutate({ message: text.trim(), imageUrl: publicUrl });
+        sendMessage.mutate({ message: text.trim(), imageUrl: publicUrl, level });
       } catch (err) {
         console.error("Upload failed", err);
         setUploading(false);
@@ -726,7 +822,7 @@ function StudentChat() {
       setUploading(false);
       setPendingImage(null);
     } else {
-      sendMessage.mutate({ message: text.trim() });
+      sendMessage.mutate({ message: text.trim(), level });
     }
     setText("");
     isNearBottom.current = true;

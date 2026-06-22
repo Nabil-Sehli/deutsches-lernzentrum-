@@ -23,6 +23,7 @@ export const users = mysqlTable("users", {
   age: int("age"),
   city: varchar("city", { length: 255 }),
   level: mysqlEnum("level", ["a1", "a2", "b1", "b2", "c1", "c2"]),
+  levelRequestedAt: timestamp("levelRequestedAt"),
   bio: text("bio"),
   avatar: text("avatar"),
   centerId: bigint("centerId", { mode: "number", unsigned: true }),
@@ -346,6 +347,7 @@ export const chatMessages = mysqlTable("chat_messages", {
   userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
   message: text("message").notNull(),
   imageUrl: varchar("imageUrl", { length: 1024 }),
+  level: mysqlEnum("level", ["a1", "a2", "b1", "b2", "c1", "c2"]),
   reactions: json("reactions").default([]),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
@@ -395,7 +397,7 @@ export type InsertSubmission = typeof submissions.$inferInsert;
 export const notifications = mysqlTable("notifications", {
   id: serial("id").primaryKey(),
   userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
-  type: mysqlEnum("type", ["new_message", "upcoming_meeting", "grade_ready", "assignment_posted"]).notNull(),
+  type: mysqlEnum("type", ["new_message", "upcoming_meeting", "grade_ready", "assignment_posted", "level_needed", "level_reminder"]).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   body: text("body"),
   link: varchar("link", { length: 512 }),

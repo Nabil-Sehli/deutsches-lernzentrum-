@@ -1,7 +1,7 @@
 import { getDb } from "../queries/connection";
 import { notifications } from "@db/schema";
 
-type NotificationType = "new_message" | "upcoming_meeting" | "grade_ready" | "assignment_posted";
+type NotificationType = "new_message" | "upcoming_meeting" | "grade_ready" | "assignment_posted" | "level_needed" | "level_reminder";
 
 export async function createNotification(
   userId: number,

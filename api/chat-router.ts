@@ -2,41 +2,56 @@ import { z } from "zod";
 import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { chatMessages, users } from "@db/schema";
-import { eq, desc, and, ne } from "drizzle-orm";
+import { eq, desc, and, ne, or, isNull, SQL } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createNotification } from "./lib/notifications";
 
 export const chatRouter = createRouter({
-  list: authedQuery.query(async ({ ctx }) => {
-    const db = getDb();
-    if (!ctx.user.centerId) return [];
-    const messages = await db
-      .select({
-        id: chatMessages.id,
-        centerId: chatMessages.centerId,
-        userId: chatMessages.userId,
-        message: chatMessages.message,
-        imageUrl: chatMessages.imageUrl,
-        reactions: chatMessages.reactions,
-        createdAt: chatMessages.createdAt,
-        userName: users.name,
-        userTitle: users.title,
-        userAvatar: users.avatar,
-      })
-      .from(chatMessages)
-      .leftJoin(users, eq(chatMessages.userId, users.id))
-      .where(eq(chatMessages.centerId, ctx.user.centerId))
-      .orderBy(desc(chatMessages.createdAt))
-      .limit(50);
-    return messages.reverse().map((m) => ({
-      ...m,
-      userName: m.userTitle ? `${m.userTitle}. ${m.userName}` : m.userName,
-      reactions: (m.reactions ?? []) as { emoji: string; userId: number; userName: string }[],
-    }));
-  }),
+  list: authedQuery
+    .input(z.object({ level: z.enum(["a1", "a2", "b1", "b2", "c1", "c2"]).optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = getDb();
+      if (!ctx.user.centerId) return [];
+      const conditions: SQL[] = [eq(chatMessages.centerId, ctx.user.centerId)];
+
+      if (ctx.user.role === "student") {
+        if (ctx.user.level) {
+          conditions.push(or(eq(chatMessages.level, ctx.user.level as any), isNull(chatMessages.level)) as SQL);
+        } else {
+          conditions.push(isNull(chatMessages.level));
+        }
+      } else if (input?.level) {
+        conditions.push(eq(chatMessages.level, input.level as any));
+      }
+
+      const messages = await db
+        .select({
+          id: chatMessages.id,
+          centerId: chatMessages.centerId,
+          userId: chatMessages.userId,
+          message: chatMessages.message,
+          imageUrl: chatMessages.imageUrl,
+          level: chatMessages.level,
+          reactions: chatMessages.reactions,
+          createdAt: chatMessages.createdAt,
+          userName: users.name,
+          userTitle: users.title,
+          userAvatar: users.avatar,
+        })
+        .from(chatMessages)
+        .leftJoin(users, eq(chatMessages.userId, users.id))
+        .where(and(...conditions))
+        .orderBy(desc(chatMessages.createdAt))
+        .limit(50);
+      return messages.reverse().map((m) => ({
+        ...m,
+        userName: m.userTitle ? `${m.userTitle}. ${m.userName}` : m.userName,
+        reactions: (m.reactions ?? []) as { emoji: string; userId: number; userName: string }[],
+      }));
+    }),
 
   send: authedQuery
-    .input(z.object({ message: z.string().max(2000).default(""), imageUrl: z.string().max(1024).optional() }).refine(d => d.message || d.imageUrl, { message: "Either message or imageUrl is required" }))
+    .input(z.object({ message: z.string().max(2000).default(""), imageUrl: z.string().max(1024).optional(), level: z.enum(["a1", "a2", "b1", "b2", "c1", "c2"]).optional() }).refine(d => d.message || d.imageUrl, { message: "Either message or imageUrl is required" }))
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
       if (!ctx.user.centerId) throw new TRPCError({ code: "NOT_FOUND", message: "You are not part of a center" });
@@ -46,6 +61,7 @@ export const chatRouter = createRouter({
         userId: ctx.user.id,
         message: input.message,
         imageUrl: input.imageUrl ?? null,
+        level: input.level ?? null,
         reactions: [],
       });
 

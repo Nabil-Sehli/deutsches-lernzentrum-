@@ -8,6 +8,7 @@ import {
 } from "@db/schema";
 import { eq, and, count, inArray, gte, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { createNotification } from "./lib/notifications";
 
 export const centerRouter = createRouter({
   list: publicQuery.query(async () => {
@@ -224,6 +225,33 @@ export const centerRouter = createRouter({
       }
 
       await db.update(users).set({ level: input.level }).where(eq(users.id, input.studentId));
+
+      return { success: true };
+    }),
+
+  remindLevel: authedQuery
+    .mutation(async ({ ctx }) => {
+      const db = getDb();
+      if (!ctx.user.centerId) throw new TRPCError({ code: "NOT_FOUND", message: "You are not part of a center" });
+      if (ctx.user.level) throw new TRPCError({ code: "BAD_REQUEST", message: "You already have a level assigned" });
+
+      const [user] = await db.select().from(users).where(eq(users.id, ctx.user.id));
+
+      const twoHours = 2 * 60 * 60 * 1000;
+      if (user.levelRequestedAt && Date.now() - new Date(user.levelRequestedAt).getTime() < twoHours) {
+        throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "You can only remind your teacher once every 2 hours" });
+      }
+
+      await db.update(users).set({ levelRequestedAt: new Date() }).where(eq(users.id, ctx.user.id));
+
+      const centerAdmins = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(and(eq(users.centerId, ctx.user.centerId), eq(users.role, "teacher")));
+
+      await Promise.all(centerAdmins.map((admin) =>
+        createNotification(admin.id, "level_reminder", "Level Reminder", `${ctx.user.name ?? "A student"} is waiting for a level assignment.`, "/admin")
+      ));
 
       return { success: true };
     }),

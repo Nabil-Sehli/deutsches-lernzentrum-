@@ -186,7 +186,12 @@
     "noLessonsTitle": "No lessons yet",
     "noLessonsDesc": "Your center hasn't published any lessons yet. Check back soon!",
     "quizHistory": "Quiz History",
-    "score": "Score"
+    "score": "Score",
+    "noLevelTitle": "Level Assignment Needed",
+    "noLevelDesc": "Your teacher has not assigned a CEFR level yet. You'll get access to lessons, chat, and assignments once your level is set.",
+    "remindTeacher": "Remind Teacher",
+    "remindSent": "Reminder sent! Your teacher will be notified.",
+    "remindCooldown": "You can remind again in {{time}}"
   },
   "admin": {
     "centerDashboard": "Center Dashboard",
