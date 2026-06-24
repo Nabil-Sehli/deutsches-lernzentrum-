@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { createRouter, publicQuery, authedQuery, checkVideoUploadLimit, incrementVideoUploadCount } from "./middleware";
 import { getDb } from "./queries/connection";
-import { lessons, questions, quizAttempts, users } from "@db/schema";
-import { eq, and, or, isNull } from "drizzle-orm";
+import { lessons, questions, quizAttempts, users, groupMembers } from "@db/schema";
+import { eq, and, or, isNull, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createNotification } from "./lib/notifications";
 
@@ -37,11 +37,24 @@ export const lessonRouter = createRouter({
   myLessons: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
     if (!ctx.user.centerId) return [];
-    if (ctx.user.role === "student" && ctx.user.level) {
+    if (ctx.user.role === "student") {
+      const myGroupIds = await db
+        .select({ id: groupMembers.groupId })
+        .from(groupMembers)
+        .where(eq(groupMembers.studentId, ctx.user.id));
+      const gIds = myGroupIds.map((g) => g.id);
+
+      const orConds: any[] = [isNull(lessons.level)];
+      if (ctx.user.level) {
+        orConds.push(eq(lessons.level, ctx.user.level));
+      }
+      if (gIds.length > 0) {
+        orConds.push(inArray(lessons.groupId, gIds));
+      }
       return db
         .select()
         .from(lessons)
-        .where(and(eq(lessons.centerId, ctx.user.centerId), or(eq(lessons.level, ctx.user.level), isNull(lessons.level))))
+        .where(and(eq(lessons.centerId, ctx.user.centerId), or(...orConds)))
         .orderBy(lessons.order);
     }
     return db
@@ -58,6 +71,7 @@ export const lessonRouter = createRouter({
         description: z.string().optional(),
         videoUrl: z.string().min(1).max(512),
         level: z.enum(["a1", "a2", "b1", "b2", "c1", "c2"]).optional(),
+        groupId: z.number().optional(),
         order: z.number().default(0),
       })
     )
@@ -74,6 +88,7 @@ export const lessonRouter = createRouter({
           description: input.description ?? "",
           videoUrl: input.videoUrl,
           level: input.level ?? null,
+          groupId: input.groupId ?? null,
           order: input.order,
         });
 
@@ -100,6 +115,7 @@ export const lessonRouter = createRouter({
         description: z.string().optional(),
         videoUrl: z.string().min(1).max(512).optional(),
         level: z.enum(["a1", "a2", "b1", "b2", "c1", "c2"]).optional().nullable(),
+        groupId: z.number().optional().nullable(),
         order: z.number().optional(),
       })
     )
@@ -122,6 +138,7 @@ export const lessonRouter = createRouter({
           description: input.description ?? lesson.description,
           videoUrl: input.videoUrl ?? lesson.videoUrl,
           level: input.level !== undefined ? input.level : lesson.level,
+          groupId: input.groupId !== undefined ? input.groupId : lesson.groupId,
           order: input.order ?? lesson.order,
         })
         .where(eq(lessons.id, input.id));

@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
-import { Building2, MapPin, Star, Search, Loader2 } from "lucide-react";
+import { Building2, MapPin, Search, Loader2, ArrowLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 export default function CenterDirectory() {
+  const navigate = useNavigate();
   const { data: centers, isLoading } = trpc.center.list.useQuery();
   const [search, setSearch] = useState("");
 
@@ -15,6 +16,12 @@ export default function CenterDirectory() {
   return (
     <div className="min-h-screen bg-[#e8f5e9]">
       <div className="max-w-[1200px] mx-auto px-6 py-12">
+        <button
+          onClick={() => navigate(-1)}
+          className="mb-6 flex items-center gap-2 text-sm text-[#78909c] hover:text-[#2c3e2d] transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-[#2c3e2d] mb-2">German Learning Centers</h1>
           <p className="text-[#78909c]">Browse certified German language teaching centers</p>

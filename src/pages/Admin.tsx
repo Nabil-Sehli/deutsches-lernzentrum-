@@ -79,6 +79,8 @@ import {
   LogOut,
   Mail,
   Calendar,
+  Eye,
+  Pencil,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -117,6 +119,7 @@ function CreateLessonDialog({
 }) {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
+  const { data: groups } = trpc.groups.list.useQuery();
   const getUploadUrl = trpc.upload.getUrl.useMutation();
   const [videoSource, setVideoSource] = useState<"url" | "upload">("url");
   const [videoUploading, setVideoUploading] = useState(false);
@@ -313,6 +316,28 @@ function CreateLessonDialog({
                       <option value="">{t("admin.allLevels")}</option>
                       {(["a1", "a2", "b1", "b2", "c1", "c2"] as const).map((l) => (
                         <option key={l} value={l}>{l.toUpperCase()}</option>
+                      ))}
+                    </select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="groupId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Group (optional)</FormLabel>
+                  <FormControl>
+                    <select
+                      value={field.value ?? ""}
+                      onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                      className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm text-[#2c3e2d]"
+                    >
+                      <option value="">All students (no group)</option>
+                      {(groups ?? []).map((g) => (
+                        <option key={g.id} value={g.id}>{g.name}{g.level ? ` (${g.level.toUpperCase()})` : ""}</option>
                       ))}
                     </select>
                   </FormControl>
@@ -1355,8 +1380,12 @@ function AssignmentsPanel() {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
   const { data: assignments } = trpc.assignments.listByCenter.useQuery();
+  const { data: groups } = trpc.groups.list.useQuery();
   const createAssignment = trpc.assignments.create.useMutation({
     onSuccess: () => utils.assignments.listByCenter.invalidate(),
+  });
+  const updateAssignment = trpc.assignments.update.useMutation({
+    onSuccess: () => { utils.assignments.listByCenter.invalidate(); setEditingId(null); },
   });
   const deleteAssignment = trpc.assignments.delete.useMutation({
     onSuccess: () => utils.assignments.listByCenter.invalidate(),
@@ -1366,6 +1395,15 @@ function AssignmentsPanel() {
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [level, setLevel] = useState("");
+  const [groupId, setGroupId] = useState<number | "">("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [editingDescription, setEditingDescription] = useState("");
+  const [editingDueDate, setEditingDueDate] = useState("");
+  const [editingLevel, setEditingLevel] = useState("");
+  const [editingGroupId, setEditingGroupId] = useState<number | "">("");
+  const [detailId, setDetailId] = useState<number | null>(null);
+  const { data: detail } = trpc.assignments.getDetail.useQuery({ id: detailId! }, { enabled: !!detailId });
   const assignmentLevels = ["a1", "a2", "b1", "b2", "c1", "c2"] as const;
   const [assignmentLevelFilter, setAssignmentLevelFilter] = useState<string | null>(null);
 
@@ -1376,11 +1414,13 @@ function AssignmentsPanel() {
       description: description.trim() || undefined,
       dueDate: dueDate || undefined,
       level: level ? (level as "a1" | "a2" | "b1" | "b2" | "c1" | "c2") : undefined,
+      groupId: groupId !== "" ? groupId : undefined,
     });
     setTitle("");
     setDescription("");
     setDueDate("");
     setLevel("");
+    setGroupId("");
     setShowForm(false);
   };
 
@@ -1440,6 +1480,16 @@ function AssignmentsPanel() {
                 <option key={l} value={l}>{l.toUpperCase()}</option>
               ))}
             </select>
+            <select
+              value={groupId}
+              onChange={(e) => setGroupId(e.target.value ? Number(e.target.value) : "")}
+              className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm text-[#2c3e2d]"
+            >
+              <option value="">All students (no group)</option>
+              {(groups ?? []).map((g) => (
+                <option key={g.id} value={g.id}>{g.name}{g.level ? ` (${g.level.toUpperCase()})` : ""}</option>
+              ))}
+            </select>
             <Button
               onClick={handleCreate}
               disabled={createAssignment.isPending || !title.trim()}
@@ -1451,12 +1501,114 @@ function AssignmentsPanel() {
         </Card>
       )}
 
-      {!assignments || assignments.length === 0 ? (
+      {editingId && (
+        <Card className="clay-card border-0">
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-[#2c3e2d]">Edit Assignment</h3>
+              <button onClick={() => setEditingId(null)} className="text-[#78909c] hover:text-[#2c3e2d]"><X className="w-4 h-4" /></button>
+            </div>
+            <input
+              value={editingTitle}
+              onChange={(e) => setEditingTitle(e.target.value)}
+              placeholder="Assignment title"
+              className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm"
+            />
+            <textarea
+              value={editingDescription}
+              onChange={(e) => setEditingDescription(e.target.value)}
+              placeholder="Description (optional)"
+              className="flex min-h-[80px] w-full rounded-xl border border-[#00695c]/15 bg-white px-4 py-3 text-sm"
+            />
+            <input
+              type="datetime-local"
+              value={editingDueDate}
+              onChange={(e) => setEditingDueDate(e.target.value)}
+              className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm"
+            />
+            <select
+              value={editingLevel}
+              onChange={(e) => setEditingLevel(e.target.value)}
+              className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm text-[#2c3e2d]"
+            >
+              <option value="">{t("admin.allLevels")}</option>
+              {(["a1", "a2", "b1", "b2", "c1", "c2"] as const).map((l) => (
+                <option key={l} value={l}>{l.toUpperCase()}</option>
+              ))}
+            </select>
+            <select
+              value={editingGroupId}
+              onChange={(e) => setEditingGroupId(e.target.value ? Number(e.target.value) : "")}
+              className="flex h-11 w-full rounded-xl border border-[#00695c]/15 bg-white px-4 text-sm text-[#2c3e2d]"
+            >
+              <option value="">All students (no group)</option>
+              {(groups ?? []).map((g) => (
+                <option key={g.id} value={g.id}>{g.name}{g.level ? ` (${g.level.toUpperCase()})` : ""}</option>
+              ))}
+            </select>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => updateAssignment.mutate({
+                  id: editingId,
+                  title: editingTitle.trim() || undefined,
+                  description: editingDescription || null,
+                  dueDate: editingDueDate || null,
+                  level: editingLevel ? (editingLevel as "a1" | "a2" | "b1" | "b2" | "c1" | "c2") : null,
+                  groupId: editingGroupId !== "" ? editingGroupId : null,
+                })}
+                disabled={updateAssignment.isPending}
+                className="rounded-full bg-[#00695c] hover:bg-[#004d40]"
+              >
+                {updateAssignment.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
+              </Button>
+              <Button variant="outline" onClick={() => setEditingId(null)} className="rounded-full">Cancel</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {detailId && detail ? (
+        <Card className="clay-card border-0">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-semibold text-lg text-[#2c3e2d]">{detail.title}</h3>
+                {detail.level && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#00695c]/10 text-[#00695c]">{detail.level.toUpperCase()}</span>}
+              </div>
+              <button onClick={() => setDetailId(null)} className="text-[#78909c] hover:text-[#2c3e2d]"><X className="w-4 h-4" /></button>
+            </div>
+            {detail.description && <p className="text-sm text-[#78909c] mb-4">{detail.description}</p>}
+            <div className="text-sm text-[#78909c] mb-4">{detail.submittedCount} / {detail.totalStudents} submitted</div>
+            {detail.submissions.length === 0 ? (
+              <p className="text-sm text-[#78909c]">No submissions yet.</p>
+            ) : (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {detail.submissions.map((s) => (
+                  <div key={s.id} className="bg-[#f5f5f5] rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm text-[#2c3e2d]">{s.studentName}{s.studentTitle ? ` (${s.studentTitle})` : ""}</span>
+                      {s.grade != null ? (
+                        <span className="text-sm font-semibold text-[#00695c]">{s.grade}/100</span>
+                      ) : (
+                        <span className="text-xs text-[#f9a825]">Ungraded</span>
+                      )}
+                    </div>
+                    {s.text && <p className="text-sm text-[#78909c] mt-1">{s.text}</p>}
+                    {s.fileUrl && <a href={s.fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[#00695c] underline mt-1 block">View attachment</a>}
+                    <div className="text-xs text-[#78909c] mt-1">Submitted {new Date(s.submittedAt).toLocaleDateString()}</div>
+                    {s.feedback && <div className="text-xs text-[#78909c] mt-1 italic">Feedback: {s.feedback}</div>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : (!assignments || assignments.length === 0) && !detailId ? (
         <Card className="clay-card border-0 p-12 text-center">
           <ClipboardList className="w-12 h-12 text-[#78909c] mx-auto mb-4" />
           <p className="text-[#78909c]">No assignments yet. Create one to give homework to your students.</p>
         </Card>
-      ) : (
+      ) : !detailId ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {assignments
             .filter((a) => !assignmentLevelFilter || a.level === assignmentLevelFilter)
@@ -1467,7 +1619,7 @@ function AssignmentsPanel() {
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-[#2c3e2d]">{a.title}</h3>
                     {a.level && (
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#00695c]/10 text-[#00695c] ml-2">
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#00695c]/10 text-[#00695c]">
                         {a.level.toUpperCase()}
                       </span>
                     )}
@@ -1479,18 +1631,42 @@ function AssignmentsPanel() {
                       </div>
                     )}
                   </div>
-                  <button
-                    onClick={() => deleteAssignment.mutate({ id: a.id })}
-                    className="text-red-400 hover:text-red-600 p-1 shrink-0"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => { setDetailId(a.id); }}
+                      className="text-[#00695c] hover:text-[#004d40] p-1"
+                      title="View submissions"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingId(a.id);
+                        setEditingTitle(a.title);
+                        setEditingDescription(a.description ?? "");
+                        setEditingDueDate(a.dueDate ? new Date(a.dueDate).toISOString().slice(0, 16) : "");
+                        setEditingLevel(a.level ?? "");
+                        setEditingGroupId(a.groupId ?? "");
+                      }}
+                      className="text-[#78909c] hover:text-[#2c3e2d] p-1"
+                      title="Edit"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => deleteAssignment.mutate({ id: a.id })}
+                      className="text-red-400 hover:text-red-600 p-1"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

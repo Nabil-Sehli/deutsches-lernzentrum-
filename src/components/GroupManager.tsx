@@ -68,6 +68,12 @@ export default function GroupManager() {
         </CardContent>
       </Card>
 
+      {createGroup.error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+          Failed to create group: {createGroup.error.message}
+        </div>
+      )}
+
       {(!groups || groups.length === 0) && (
         <div className="text-center py-12 text-[#78909c]">
           <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />

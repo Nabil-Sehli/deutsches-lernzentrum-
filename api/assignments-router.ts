@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { createRouter, authedQuery, checkAssignmentLimit, incrementAssignmentCount } from "./middleware";
 import { getDb } from "./queries/connection";
-import { assignments, submissions, users, quizAttempts, lessons } from "@db/schema";
-import { eq, desc, and, or, isNull } from "drizzle-orm";
+import { assignments, submissions, users, quizAttempts, lessons, groupMembers } from "@db/schema";
+import { eq, desc, and, or, isNull, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createNotification } from "./lib/notifications";
 
@@ -22,11 +22,24 @@ export const assignmentsRouter = createRouter({
     if (!ctx.user.centerId) return [];
 
     let all;
-    if (ctx.user.role === "student" && ctx.user.level) {
+    if (ctx.user.role === "student") {
+      const myGroupIds = await db
+        .select({ id: groupMembers.groupId })
+        .from(groupMembers)
+        .where(eq(groupMembers.studentId, ctx.user.id));
+      const gIds = myGroupIds.map((g) => g.id);
+
+      const orConds: any[] = [isNull(assignments.level)];
+      if (ctx.user.level) {
+        orConds.push(eq(assignments.level, ctx.user.level));
+      }
+      if (gIds.length > 0) {
+        orConds.push(inArray(assignments.groupId, gIds));
+      }
       all = await db
         .select()
         .from(assignments)
-        .where(and(eq(assignments.centerId, ctx.user.centerId), or(eq(assignments.level, ctx.user.level), isNull(assignments.level))))
+        .where(and(eq(assignments.centerId, ctx.user.centerId), or(...orConds)))
         .orderBy(desc(assignments.createdAt));
     } else {
       all = await db
@@ -53,6 +66,7 @@ export const assignmentsRouter = createRouter({
       description: z.string().optional(),
       lessonId: z.number().optional(),
       level: z.enum(["a1", "a2", "b1", "b2", "c1", "c2"]).optional(),
+      groupId: z.number().optional(),
       dueDate: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -67,6 +81,7 @@ export const assignmentsRouter = createRouter({
         description: input.description ?? null,
         lessonId: input.lessonId ?? null,
         level: input.level ?? null,
+        groupId: input.groupId ?? null,
         dueDate: input.dueDate ? new Date(input.dueDate) : null,
       });
 
@@ -82,6 +97,70 @@ export const assignmentsRouter = createRouter({
       ));
 
       return { id: a.insertId };
+    }),
+
+  update: authedQuery
+    .input(z.object({
+      id: z.number(),
+      title: z.string().min(1).max(255).optional(),
+      description: z.string().optional().nullable(),
+      lessonId: z.number().optional().nullable(),
+      level: z.enum(["a1", "a2", "b1", "b2", "c1", "c2"]).optional().nullable(),
+      groupId: z.number().optional().nullable(),
+      dueDate: z.string().optional().nullable(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const [a] = await db.select().from(assignments).where(eq(assignments.id, input.id));
+      if (!a || a.centerId !== ctx.user.centerId) throw new TRPCError({ code: "NOT_FOUND" });
+      await db.update(assignments).set({
+        title: input.title ?? a.title,
+        description: input.description !== undefined ? input.description : a.description,
+        lessonId: input.lessonId !== undefined ? input.lessonId : a.lessonId,
+        level: input.level !== undefined ? input.level : a.level,
+        groupId: input.groupId !== undefined ? input.groupId : a.groupId,
+        dueDate: input.dueDate !== undefined ? (input.dueDate ? new Date(input.dueDate) : null) : a.dueDate,
+      }).where(eq(assignments.id, input.id));
+      return { success: true };
+    }),
+
+  getDetail: authedQuery
+    .input(z.object({ id: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db = getDb();
+      const [a] = await db.select().from(assignments).where(eq(assignments.id, input.id));
+      if (!a || a.centerId !== ctx.user.centerId) throw new TRPCError({ code: "NOT_FOUND" });
+
+      const subs = await db
+        .select({
+          id: submissions.id,
+          studentId: submissions.studentId,
+          text: submissions.text,
+          fileUrl: submissions.fileUrl,
+          grade: submissions.grade,
+          feedback: submissions.feedback,
+          submittedAt: submissions.submittedAt,
+          gradedAt: submissions.gradedAt,
+          studentName: users.name,
+          studentTitle: users.title,
+        })
+        .from(submissions)
+        .innerJoin(users, eq(submissions.studentId, users.id))
+        .where(eq(submissions.assignmentId, input.id))
+        .orderBy(desc(submissions.submittedAt));
+
+      const allStudents = await db
+        .select({ id: users.id, name: users.name, title: users.title })
+        .from(users)
+        .where(and(eq(users.centerId, ctx.user.centerId), eq(users.role, "student")));
+
+      return {
+        ...a,
+        submissions: subs,
+        totalStudents: allStudents.length,
+        submittedCount: subs.length,
+        unsubmittedStudents: allStudents.filter((s) => !subs.find((sub) => sub.studentId === s.id)),
+      };
     }),
 
   delete: authedQuery
