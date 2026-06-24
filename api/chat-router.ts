@@ -53,7 +53,7 @@ export const chatRouter = createRouter({
     }),
 
   send: authedQuery
-    .input(z.object({ message: z.string().max(2000).default(""), imageUrl: z.string().max(1024).optional(), level: z.enum(["a1", "a2", "b1", "b2", "c1", "c2"]).optional() }).refine(d => d.message || d.imageUrl, { message: "Either message or imageUrl is required" }))
+    .input(z.object({ message: z.string().max(2000).default(""), imageUrl: z.string().max(1024).optional(), level: z.enum(["a1", "a2", "b1", "b2", "c1", "c2"]).optional().nullable() }).refine(d => d.message || d.imageUrl, { message: "Either message or imageUrl is required" }))
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
       if (!ctx.user.centerId) throw new TRPCError({ code: "NOT_FOUND", message: "You are not part of a center" });

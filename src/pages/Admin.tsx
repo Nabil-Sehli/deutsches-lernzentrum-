@@ -2910,6 +2910,8 @@ function ChatPanel() {
   const handleSend = async () => {
     if (!text.trim() && !pendingImage) return;
     const level = chatLevelFilter as "a1" | "a2" | "b1" | "b2" | "c1" | "c2" | undefined;
+    const args: { message: string; imageUrl?: string; level?: "a1" | "a2" | "b1" | "b2" | "c1" | "c2" } = { message: text.trim() };
+    if (level) args.level = level;
     if (pendingImage) {
       setUploading(true);
       try {
@@ -2919,7 +2921,7 @@ function ChatPanel() {
           fileSize: pendingImage.file.size,
         });
         await fetch(uploadUrl, { method: "PUT", body: pendingImage.file, headers: { "Content-Type": pendingImage.file.type } });
-        sendMessage.mutate({ message: text.trim(), imageUrl: publicUrl, level });
+        sendMessage.mutate({ ...args, imageUrl: publicUrl });
       } catch (err) {
         console.error("Upload failed", err);
         setUploading(false);
@@ -2928,7 +2930,7 @@ function ChatPanel() {
       setUploading(false);
       setPendingImage(null);
     } else {
-      sendMessage.mutate({ message: text.trim(), level });
+      sendMessage.mutate(args);
     }
     setText("");
     isNearBottom.current = true;
