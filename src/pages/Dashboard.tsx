@@ -762,9 +762,12 @@ function StudentChat() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const utils = trpc.useUtils();
-  const { data: messages, isLoading } = trpc.chat.list.useQuery(undefined, {
-    refetchInterval: 3000,
-  });
+  const chatLevels = ["a1", "a2", "b1", "b2", "c1", "c2"] as const;
+  const [chatLevelFilter, setChatLevelFilter] = useState<string | null>(null);
+  const { data: messages, isLoading } = trpc.chat.list.useQuery(
+    chatLevelFilter ? { level: chatLevelFilter as "a1" | "a2" | "b1" | "b2" | "c1" | "c2" } : undefined,
+    { refetchInterval: 3000 }
+  );
   const sendMessage = trpc.chat.send.useMutation({
     onSuccess: () => utils.chat.list.invalidate(),
   });
@@ -803,7 +806,7 @@ function StudentChat() {
 
   const handleSend = async () => {
     if (!text.trim() && !pendingImage) return;
-    const level = user?.level as "a1" | "a2" | "b1" | "b2" | "c1" | "c2" | undefined;
+    const level = (chatLevelFilter ?? user?.level) as "a1" | "a2" | "b1" | "b2" | "c1" | "c2" | undefined;
     if (pendingImage) {
       setUploading(true);
       try {
@@ -839,10 +842,22 @@ function StudentChat() {
 
   return (
     <div id="chat" className="mt-12">
-      <h2 className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2">
-        <MessageSquare className="w-5 h-5 text-[#00695c]" />
-        {t("admin.tabChat")}
-      </h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-semibold text-[#2c3e2d] flex items-center gap-2">
+          <MessageSquare className="w-5 h-5 text-[#00695c]" />
+          {t("admin.tabChat")}
+        </h2>
+        <select
+          value={chatLevelFilter ?? ""}
+          onChange={(e) => setChatLevelFilter(e.target.value || null)}
+          className="h-9 rounded-xl border border-[#00695c]/15 bg-white px-3 text-sm text-[#2c3e2d]"
+        >
+          <option value="">{t("admin.allLevels")}</option>
+          {chatLevels.map((l) => (
+            <option key={l} value={l}>{l.toUpperCase()}</option>
+          ))}
+        </select>
+      </div>
 
       <Card className="clay-card border-0 relative overflow-hidden">
         <CardContent className="p-4 relative">

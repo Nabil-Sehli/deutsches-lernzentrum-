@@ -15,7 +15,9 @@ export const chatRouter = createRouter({
       const conditions: SQL[] = [eq(chatMessages.centerId, ctx.user.centerId)];
 
       if (ctx.user.role === "student") {
-        if (ctx.user.level) {
+        if (input?.level) {
+          conditions.push(eq(chatMessages.level, input.level as any));
+        } else if (ctx.user.level) {
           conditions.push(or(eq(chatMessages.level, ctx.user.level as any), isNull(chatMessages.level)) as SQL);
         } else {
           conditions.push(isNull(chatMessages.level));
