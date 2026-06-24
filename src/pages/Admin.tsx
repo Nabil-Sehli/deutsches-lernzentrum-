@@ -79,7 +79,6 @@ import {
   LogOut,
   Mail,
   Calendar,
-  Bell,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -582,16 +581,13 @@ export default function Admin() {
       <div className="pt-24 pb-16 px-6">
         <div className="max-w-[1200px] mx-auto">
           {/* Header */}
-          <div className="mb-8 flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-[#2c3e2d]">
-                {stats?.center?.name ?? t("admin.centerDashboard")}
-              </h1>
-              <p className="text-[#78909c] mt-1">
-                {t("admin.manageSubtitle")}
-              </p>
-            </div>
-            <NotificationBell />
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-[#2c3e2d]">
+              {stats?.center?.name ?? t("admin.centerDashboard")}
+            </h1>
+            <p className="text-[#78909c] mt-1">
+              {t("admin.manageSubtitle")}
+            </p>
           </div>
 
           {/* Stats */}
@@ -2776,89 +2772,6 @@ function UpgradeDialog({ onUpgrade, isPending }: { onUpgrade: () => void; isPend
         </DialogContent>
       </Dialog>
     </>
-  );
-}
-
-function NotificationBell() {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  const { data: unreadCount } = trpc.notifications.unreadCount.useQuery(undefined, {
-    refetchInterval: 30000,
-  });
-  const { data: notifications } = trpc.notifications.list.useQuery({ limit: 10 });
-  const utils = trpc.useUtils();
-  const markRead = trpc.notifications.markRead.useMutation({
-    onSuccess: () => utils.notifications.invalidate(),
-  });
-  const markAllRead = trpc.notifications.markAllRead.useMutation({
-    onSuccess: () => utils.notifications.invalidate(),
-  });
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="relative p-2 rounded-full hover:bg-[#00695c]/10 transition-colors"
-      >
-        <Bell className="w-5 h-5 text-[#2c3e2d]" />
-        {unreadCount && unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-            {unreadCount > 99 ? "99+" : unreadCount}
-          </span>
-        )}
-      </button>
-      {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-[#00695c]/10 overflow-hidden z-50">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#00695c]/10">
-            <h3 className="text-sm font-semibold text-[#2c3e2d]">Notifications</h3>
-            {unreadCount && unreadCount > 0 && (
-              <button
-                onClick={() => markAllRead.mutate()}
-                className="text-xs text-[#00695c] font-medium hover:underline"
-              >
-                Mark all read
-              </button>
-            )}
-          </div>
-          <div className="max-h-80 overflow-y-auto">
-            {!notifications || notifications.length === 0 ? (
-              <div className="p-6 text-center text-sm text-[#78909c]">
-                No notifications yet.
-              </div>
-            ) : (
-              notifications.map((n) => (
-                <button
-                  key={n.id}
-                  onClick={() => !n.read && markRead.mutate({ id: n.id })}
-                  className={`w-full text-left px-4 py-3 border-b border-[#00695c]/5 hover:bg-[#00695c]/3 transition-colors ${
-                    !n.read ? "bg-[#00695c]/5" : ""
-                  }`}
-                >
-                  <p className={`text-sm ${!n.read ? "font-semibold text-[#2c3e2d]" : "text-[#445E5D]"}`}>
-                    {n.title}
-                  </p>
-                  {n.body && (
-                    <p className="text-xs text-[#78909c] mt-0.5 line-clamp-2">{n.body}</p>
-                  )}
-                  <p className="text-[10px] text-[#aab7b7] mt-1">
-                    {new Date(n.createdAt).toLocaleDateString()}
-                  </p>
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-    </div>
   );
 }
 
