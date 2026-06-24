@@ -534,7 +534,7 @@ export default function Dashboard() {
           )}
 
           {/* Meeting Rooms */}
-          {meetingRooms && meetingRooms.length > 0 && (
+          {(user?.role !== "student" || user?.level) && meetingRooms && meetingRooms.length > 0 && (
             <div className="mt-12">
               <VideoCall roomUrl={callRoom ?? ""} open={!!callRoom} onClose={() => setCallRoom(null)} />
               <h2 className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2">

@@ -250,7 +250,7 @@ export const centerRouter = createRouter({
         .where(and(eq(users.centerId, ctx.user.centerId), eq(users.role, "teacher")));
 
       await Promise.all(centerAdmins.map((admin) =>
-        createNotification(admin.id, "level_reminder", "Level Reminder", `${ctx.user.name ?? "A student"} is waiting for a level assignment.`, "/admin")
+        createNotification(admin.id, "level_reminder", "Level Reminder", `${ctx.user.name ?? "A student"} is waiting for a level assignment.`, "/admin?tab=students")
       ));
 
       return { success: true };

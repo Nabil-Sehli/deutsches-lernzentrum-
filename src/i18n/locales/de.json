@@ -188,7 +188,7 @@
     "quizHistory": "Quiz-Verlauf",
     "score": "Punktzahl",
     "noLevelTitle": "Sprachniveau erforderlich",
-    "noLevelDesc": "Dein Lehrer hat noch kein CEFR-Sprachniveau zugewiesen. Sobald dein Niveau festgelegt ist, erhältst du Zugriff auf Lektionen, Chat und Aufgaben.",
+    "noLevelDesc": "Dein Lehrer hat noch kein Sprachniveau zugewiesen. Sobald dein Niveau festgelegt ist, erhältst du Zugriff auf Lektionen, Chat und Aufgaben.",
     "remindTeacher": "Lehrer erinnern",
     "remindSent": "Erinnerung gesendet! Dein Lehrer wird benachrichtigt.",
     "remindCooldown": "Du kannst in {{time}} wieder erinnern"

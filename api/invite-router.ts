@@ -112,7 +112,7 @@ export const inviteRouter = createRouter({
         .where(and(eq(users.centerId, invite.centerId), eq(users.role, "teacher")));
 
       await Promise.all(centerAdmins.map((admin) =>
-        createNotification(admin.id, "level_needed", "New Student Joined", `${ctx.user.name ?? "A student"} joined your center and needs a level assigned.`, "/admin")
+        createNotification(admin.id, "level_needed", "New Student Joined", `${ctx.user.name ?? "A student"} joined your center and needs a level assigned.`, "/admin?tab=students")
       ));
 
       return {
