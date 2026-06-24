@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router";
 import { trpc } from "@/providers/trpc";
-import { Building2, Mail, MapPin, Phone, ChevronLeft, ChevronRight, User } from "lucide-react";
+import { Building2, Mail, MapPin, Phone, ChevronLeft, ChevronRight, User, Star } from "lucide-react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -197,6 +197,9 @@ export default function CenterPage() {
           {data.locations && data.locations.length > 0 && (
             <MapView locations={data.locations} />
           )}
+
+          {/* Reviews */}
+          <ReviewsSection centerId={data.id} />
         </div>
       </main>
 
@@ -417,5 +420,58 @@ function Slideshow({ images, centerName }: { images: string[]; centerName: strin
         </>
       )}
     </div>
+  );
+}
+
+function ReviewsSection({ centerId }: { centerId: number }) {
+  const { data: reviews } = trpc.reviews.listByCenter.useQuery({ centerId });
+  const { data: stats } = trpc.reviews.stats.useQuery({ centerId });
+
+  if (!reviews || reviews.length === 0) return null;
+
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-[#2c3e2d]">Reviews</h2>
+        {stats && (
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <Star
+                  key={s}
+                  className={`w-4 h-4 ${s <= Math.round(stats.average ?? 0) ? "text-amber-400 fill-amber-400" : "text-[#78909c]/30"}`}
+                />
+              ))}
+            </div>
+            <span className="text-sm font-medium text-[#2c3e2d]">{stats.average?.toFixed(1)}</span>
+            <span className="text-sm text-[#78909c]">({stats.total})</span>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {reviews.map((r) => (
+          <div key={r.id} className="bg-white/80 backdrop-blur-xl rounded-2xl p-5 shadow-md border border-white/50">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-[#2c3e2d]">
+                {r.studentTitle ? `${r.studentTitle}. ` : ""}{r.studentName ?? "Anonymous"}
+              </span>
+              <div className="flex items-center gap-0.5">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Star
+                    key={s}
+                    className={`w-3.5 h-3.5 ${s <= r.rating ? "text-amber-400 fill-amber-400" : "text-[#78909c]/20"}`}
+                  />
+                ))}
+              </div>
+            </div>
+            {r.text && <p className="text-sm text-[#2c3e2d] leading-relaxed">{r.text}</p>}
+            <p className="text-[10px] text-[#aab7b7] mt-2">
+              {new Date(r.createdAt).toLocaleDateString()}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

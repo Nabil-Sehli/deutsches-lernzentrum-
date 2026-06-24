@@ -118,6 +118,7 @@ export const lessons = mysqlTable("lessons", {
   description: text("description"),
   videoUrl: varchar("videoUrl", { length: 512 }).notNull(),
   level: mysqlEnum("level", ["a1", "a2", "b1", "b2", "c1", "c2"]),
+  groupId: bigint("groupId", { mode: "number", unsigned: true }),
   order: int("order").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")
@@ -364,6 +365,7 @@ export const assignments = mysqlTable("assignments", {
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
   level: mysqlEnum("level", ["a1", "a2", "b1", "b2", "c1", "c2"]),
+  groupId: bigint("groupId", { mode: "number", unsigned: true }),
   dueDate: timestamp("dueDate"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
@@ -397,7 +399,7 @@ export type InsertSubmission = typeof submissions.$inferInsert;
 export const notifications = mysqlTable("notifications", {
   id: serial("id").primaryKey(),
   userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
-  type: mysqlEnum("type", ["new_message", "upcoming_meeting", "grade_ready", "assignment_posted", "level_needed", "level_reminder"]).notNull(),
+  type: mysqlEnum("type", ["new_message", "upcoming_meeting", "grade_ready", "assignment_posted", "level_needed", "level_reminder", "lesson_published", "quiz_graded", "level_changed", "assignment_due_soon"]).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   body: text("body"),
   link: varchar("link", { length: 512 }),
@@ -410,3 +412,67 @@ export const notifications = mysqlTable("notifications", {
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
+
+export const groups = mysqlTable("groups", {
+  id: serial("id").primaryKey(),
+  centerId: bigint("centerId", { mode: "number", unsigned: true }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  level: mysqlEnum("level", ["a1", "a2", "b1", "b2", "c1", "c2"]),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  centerIdIdx: index("groups_centerId_idx").on(table.centerId),
+}));
+
+export type Group = typeof groups.$inferSelect;
+export type InsertGroup = typeof groups.$inferInsert;
+
+export const groupMembers = mysqlTable("group_members", {
+  id: serial("id").primaryKey(),
+  groupId: bigint("groupId", { mode: "number", unsigned: true }).notNull(),
+  studentId: bigint("studentId", { mode: "number", unsigned: true }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  groupIdIdx: index("group_members_groupId_idx").on(table.groupId),
+  studentIdIdx: index("group_members_studentId_idx").on(table.studentId),
+  groupStudentIdx: index("group_members_groupStudent_idx").on(table.groupId, table.studentId),
+}));
+
+export type GroupMember = typeof groupMembers.$inferSelect;
+export type InsertGroupMember = typeof groupMembers.$inferInsert;
+
+export const calendarEvents = mysqlTable("calendar_events", {
+  id: serial("id").primaryKey(),
+  centerId: bigint("centerId", { mode: "number", unsigned: true }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  startTime: timestamp("startTime").notNull(),
+  endTime: timestamp("endTime"),
+  type: mysqlEnum("type", ["lesson", "meeting", "assignment_due", "custom"]).notNull(),
+  level: mysqlEnum("level", ["a1", "a2", "b1", "b2", "c1", "c2"]),
+  createdById: bigint("createdById", { mode: "number", unsigned: true }).notNull(),
+  meetingRoomId: bigint("meetingRoomId", { mode: "number", unsigned: true }),
+  assignmentId: bigint("assignmentId", { mode: "number", unsigned: true }),
+  color: varchar("color", { length: 7 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  centerIdIdx: index("calendar_events_centerId_idx").on(table.centerId),
+  startTimeIdx: index("calendar_events_startTime_idx").on(table.startTime),
+}));
+
+export type CalendarEvent = typeof calendarEvents.$inferSelect;
+export type InsertCalendarEvent = typeof calendarEvents.$inferInsert;
+
+export const reviews = mysqlTable("reviews", {
+  id: serial("id").primaryKey(),
+  centerId: bigint("centerId", { mode: "number", unsigned: true }).notNull(),
+  studentId: bigint("studentId", { mode: "number", unsigned: true }).notNull(),
+  rating: int("rating").notNull(),
+  text: text("text"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  centerIdIdx: index("reviews_centerId_idx").on(table.centerId),
+  studentIdIdx: index("reviews_studentId_idx").on(table.studentId),
+}));
+
+export type Review = typeof reviews.$inferSelect;
+export type InsertReview = typeof reviews.$inferInsert;

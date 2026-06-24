@@ -13,6 +13,9 @@ import { meetingRoomsRouter } from "./meeting-rooms-router";
 import { chatRouter } from "./chat-router";
 import { assignmentsRouter } from "./assignments-router";
 import { notificationsRouter } from "./notifications-router";
+import { groupsRouter } from "./groups-router";
+import { calendarRouter } from "./calendar-router";
+import { reviewsRouter } from "./reviews-router";
 import { createRouter, publicQuery } from "./middleware";
 
 export const appRouter = createRouter({
@@ -32,6 +35,9 @@ export const appRouter = createRouter({
   chat: chatRouter,
   assignments: assignmentsRouter,
   notifications: notificationsRouter,
+  groups: groupsRouter,
+  calendar: calendarRouter,
+  reviews: reviewsRouter,
 });
 
 export type AppRouter = typeof appRouter;

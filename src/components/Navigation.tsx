@@ -118,6 +118,13 @@ export default function Navigation() {
               <MapPin className="w-4 h-4" />
               Map
             </Link>
+            <Link
+              to="/centers"
+              className="px-3 py-1.5 text-sm font-medium text-[#445E5D] rounded-lg hover:bg-[#445E5D]/6 transition-colors flex items-center gap-1.5"
+            >
+              <Building2 className="w-4 h-4" />
+              {t("nav.centers")}
+            </Link>
             {isAuthenticated && (
               <>
                 {isAdmin ? (
@@ -308,6 +315,14 @@ export default function Navigation() {
               >
                 <MapPin className="w-5 h-5" />
                 Map
+              </Link>
+              <Link
+                to="/centers"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#445E5D] font-medium hover:bg-[#445E5D]/6 transition-colors"
+                onClick={() => setMobileOpen(false)}
+              >
+                <Building2 className="w-5 h-5" />
+                {t("nav.centers")}
               </Link>
               {isAuthenticated && (
                 <>

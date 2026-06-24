@@ -83,7 +83,7 @@ export const lessonRouter = createRouter({
           .where(and(eq(users.centerId, ctx.user.centerId), eq(users.role, "student")));
 
         await Promise.all(students.map(s =>
-          createNotification(s.id, "assignment_posted", "New lesson", `"${input.title}" has been added`, "/dashboard")
+          createNotification(s.id, "lesson_published", "New lesson", `"${input.title}" has been added`, "/dashboard")
         ));
 
         return lesson;

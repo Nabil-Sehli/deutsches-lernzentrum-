@@ -120,6 +120,13 @@
       "when": 1751000000000,
       "tag": "0016_add_chat_level_and_notification_types",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1752000000000,
+      "tag": "0017_add_groups_calendar_reviews_and_notification_types",
+      "breakpoints": true
     }
   ]
 }

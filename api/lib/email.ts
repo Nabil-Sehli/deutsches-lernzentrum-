@@ -1,6 +1,23 @@
 import sgMail from "@sendgrid/mail";
 import { env } from "./env";
 
+export async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }): Promise<void> {
+  console.log(`[DEV] Email to ${to}: ${subject}`);
+
+  try {
+    sgMail.setApiKey(env.sendgridApiKey);
+    await sgMail.send({
+      to,
+      from: env.sendgridFromEmail,
+      subject,
+      html,
+    });
+    console.log(`[SendGrid] Email sent to ${to}: ${subject}`);
+  } catch (err) {
+    console.error(`[SendGrid] Failed to send to ${to}:`, err instanceof Error ? err.message : err);
+  }
+}
+
 export async function sendVerificationCode(email: string, code: string): Promise<void> {
   console.log(`[DEV] Verification code for ${email}: ${code}`);
 

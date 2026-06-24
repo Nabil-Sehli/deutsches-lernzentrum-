@@ -226,6 +226,16 @@ export const centerRouter = createRouter({
 
       await db.update(users).set({ level: input.level }).where(eq(users.id, input.studentId));
 
+      if (input.level) {
+        await createNotification(
+          input.studentId,
+          "level_changed",
+          "Language level updated",
+          `Your level has been set to ${input.level.toUpperCase()}`,
+          "/dashboard"
+        );
+      }
+
       return { success: true };
     }),
 

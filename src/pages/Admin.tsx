@@ -105,6 +105,8 @@ import {
 } from "@/lib/form-schemas";
 import { countries } from "@/data/countries";
 import { ImageCropper } from "@/components/ImageCropper";
+import CalendarView from "@/components/CalendarView";
+import GroupManager from "@/components/GroupManager";
 
 function CreateLessonDialog({
   open,
@@ -718,6 +720,20 @@ export default function Admin() {
               </DropdownMenu>
 
               <TabsTrigger
+                value="calendar"
+                className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                Calendar
+              </TabsTrigger>
+              <TabsTrigger
+                value="groups"
+                className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Groups
+              </TabsTrigger>
+              <TabsTrigger
                 value="settings"
                 className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
               >
@@ -1280,6 +1296,16 @@ export default function Admin() {
             {/* Submissions Tab (legacy direct access) */}
             <TabsContent value="submissions">
               <SubmissionsPanel />
+            </TabsContent>
+
+            {/* Calendar Tab */}
+            <TabsContent value="calendar">
+              <CalendarView />
+            </TabsContent>
+
+            {/* Groups Tab */}
+            <TabsContent value="groups">
+              <GroupManager />
             </TabsContent>
 
             {/* Settings Tab */}
