@@ -762,7 +762,6 @@ function StudentChat() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const utils = trpc.useUtils();
-  const chatLevels = ["a1", "a2", "b1", "b2", "c1", "c2"] as const;
   const [chatLevelFilter, setChatLevelFilter] = useState<string | null>(null);
   const { data: messages, isLoading } = trpc.chat.list.useQuery(
     chatLevelFilter ? { level: chatLevelFilter as "a1" | "a2" | "b1" | "b2" | "c1" | "c2" } : undefined,
@@ -853,9 +852,9 @@ function StudentChat() {
           className="h-9 rounded-xl border border-[#00695c]/15 bg-white px-3 text-sm text-[#2c3e2d]"
         >
           <option value="">{t("admin.allLevels")}</option>
-          {chatLevels.map((l) => (
-            <option key={l} value={l}>{l.toUpperCase()}</option>
-          ))}
+          {user?.level && (
+            <option value={user.level}>{user.level.toUpperCase()}</option>
+          )}
         </select>
       </div>
 
