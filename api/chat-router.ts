@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { chatMessages, users } from "@db/schema";
-import { eq, desc, and, ne, or, isNull, SQL } from "drizzle-orm";
+import { eq, desc, and, ne, isNull, SQL } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createNotification } from "./lib/notifications";
 
@@ -14,16 +14,10 @@ export const chatRouter = createRouter({
       if (!ctx.user.centerId) return [];
       const conditions: SQL[] = [eq(chatMessages.centerId, ctx.user.centerId)];
 
-      if (ctx.user.role === "student") {
-        if (input?.level) {
-          conditions.push(eq(chatMessages.level, input.level as any));
-        } else if (ctx.user.level) {
-          conditions.push(or(eq(chatMessages.level, ctx.user.level as any), isNull(chatMessages.level)) as SQL);
-        } else {
-          conditions.push(isNull(chatMessages.level));
-        }
-      } else if (input?.level) {
+      if (input?.level) {
         conditions.push(eq(chatMessages.level, input.level as any));
+      } else {
+        conditions.push(isNull(chatMessages.level));
       }
 
       const messages = await db

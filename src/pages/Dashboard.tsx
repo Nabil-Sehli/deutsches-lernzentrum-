@@ -805,7 +805,7 @@ function StudentChat() {
 
   const handleSend = async () => {
     if (!text.trim() && !pendingImage) return;
-    const level = (chatLevelFilter ?? user?.level) as "a1" | "a2" | "b1" | "b2" | "c1" | "c2" | undefined;
+    const level = chatLevelFilter as "a1" | "a2" | "b1" | "b2" | "c1" | "c2" | undefined;
     const args: { message: string; imageUrl?: string; level?: "a1" | "a2" | "b1" | "b2" | "c1" | "c2" } = { message: text.trim() };
     if (level) args.level = level;
     if (pendingImage) {
