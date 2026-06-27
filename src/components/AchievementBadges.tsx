@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { trpc } from "@/providers/trpc";
 import {
   Card,
@@ -9,7 +9,32 @@ import {
   Lock,
   Sparkles,
   Loader2,
+  Target,
+  Edit3,
+  Trophy,
+  BookOpen,
+  GraduationCap,
+  Star,
+  Type,
+  Medal,
+  ClipboardList,
+  Rocket,
 } from "lucide-react";
+
+const ICON_MAP: Record<string, ReactNode> = {
+  target: <Target className="w-8 h-8 mx-auto text-[#00695c]" />,
+  edit: <Edit3 className="w-8 h-8 mx-auto text-[#00695c]" />,
+  trophy: <Trophy className="w-8 h-8 mx-auto text-[#00695c]" />,
+  award: <Award className="w-8 h-8 mx-auto text-[#00695c]" />,
+  book: <BookOpen className="w-8 h-8 mx-auto text-[#00695c]" />,
+  hat: <GraduationCap className="w-8 h-8 mx-auto text-[#00695c]" />,
+  star: <Star className="w-8 h-8 mx-auto text-[#00695c]" />,
+  abc: <Type className="w-8 h-8 mx-auto text-[#00695c]" />,
+  sparkle: <Sparkles className="w-8 h-8 mx-auto text-[#00695c]" />,
+  medal: <Medal className="w-8 h-8 mx-auto text-[#00695c]" />,
+  list: <ClipboardList className="w-8 h-8 mx-auto text-[#00695c]" />,
+  rocket: <Rocket className="w-8 h-8 mx-auto text-[#00695c]" />,
+};
 
 interface Achievement {
   id: number;
@@ -20,7 +45,7 @@ interface Achievement {
   requirementType: string;
   requirementCount: number;
   unlocked: boolean;
-  unlockedAt: string | null;
+  unlockedAt: Date | null;
   progress?: number;
 }
 
@@ -59,15 +84,14 @@ export default function AchievementBadges() {
 
   return (
     <>
-      {/* New badge notification */}
       {showNew && newBadges.length > 0 && (
         <div className="fixed top-24 right-6 z-50 space-y-2">
           {newBadges.map((badge, i) => (
             <div
               key={i}
-              className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-2xl shadow-xl px-5 py-4 flex items-center gap-3 animate-in slide-in-from-right fade-in duration-300"
+              className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-2xl shadow-xl px-5 py-4 flex items-center gap-3"
             >
-              <span className="text-3xl">{badge.icon ?? "🏆"}</span>
+              <span className="text-[#00695c]">{ICON_MAP[badge.icon ?? ""] ?? <Award className="w-8 h-8" />}</span>
               <div>
                 <p className="text-xs text-amber-600 font-medium">Achievement Unlocked!</p>
                 <p className="text-sm font-bold text-[#2c3e2d]">{badge.name}</p>
@@ -94,8 +118,8 @@ export default function AchievementBadges() {
             }`}
           >
             <CardContent className="p-4 text-center">
-              <div className={`text-3xl mb-2 ${badge.unlocked ? "" : "grayscale"}`}>
-                {badge.icon ?? <Award className="w-8 h-8 mx-auto text-[#00695c]" />}
+              <div className={`mb-2 ${badge.unlocked ? "" : "grayscale"}`}>
+                {ICON_MAP[badge.icon ?? ""] ?? <Award className="w-8 h-8 mx-auto text-[#00695c]" />}
               </div>
               <p className={`text-sm font-semibold truncate ${badge.unlocked ? "text-[#2c3e2d]" : "text-[#78909c]"}`}>
                 {badge.name}

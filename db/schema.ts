@@ -520,7 +520,7 @@ export const achievements = mysqlTable("achievements", {
   key: varchar("key", { length: 100 }).notNull().unique(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
-  icon: varchar("icon", { length: 10 }),
+  icon: varchar("icon", { length: 20 }),
   requirementType: varchar("requirementType", { length: 50 }).notNull(),
   requirementCount: int("requirementCount").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
