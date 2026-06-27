@@ -402,9 +402,9 @@ export default function Dashboard() {
 
           {/* Lessons */}
           {myCenter && (user.role !== "student" || user.level) && (
-            <div id="lessons" className="scroll-mt-24">
+            <div>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-[#2c3e2d] flex items-center gap-2">
+                <h2 id="lessons" className="text-xl font-semibold text-[#2c3e2d] flex items-center gap-2 scroll-mt-24">
                   <GraduationCap className="w-5 h-5 text-[#00695c]" />
                   {t("dashboard.yourLessons")}
                 </h2>
@@ -489,8 +489,8 @@ export default function Dashboard() {
 
           {/* Progress Dashboard */}
           {user?.role === "student" && user?.level && (
-            <div id="progress" className="mt-12 scroll-mt-24">
-              <h2 className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2">
+            <div className="mt-12">
+              <h2 id="progress" className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2 scroll-mt-24">
                 <ClipboardCheck className="w-5 h-5 text-[#00695c]" />
                 Progress Dashboard
               </h2>
@@ -500,8 +500,8 @@ export default function Dashboard() {
 
           {/* Achievement Badges */}
           {user?.role === "student" && user?.level && (
-            <div id="achievements" className="mt-12 scroll-mt-24">
-              <h2 className="text-xl font-semibold text-[#2c3e2d] mb-2 flex items-center gap-2">
+            <div className="mt-12">
+              <h2 id="achievements" className="text-xl font-semibold text-[#2c3e2d] mb-2 flex items-center gap-2 scroll-mt-24">
                 <Award className="w-5 h-5 text-[#00695c]" />
                 Achievements
               </h2>
@@ -511,13 +511,13 @@ export default function Dashboard() {
 
           {/* Assignments */}
           {myCenter && user?.role === "student" && user?.level && (
-            <div id="assignments" className="scroll-mt-24"><StudentAssignments /></div>
+            <div><StudentAssignments /></div>
           )}
 
           {/* Vocabulary Trainer */}
           {user?.role === "student" && user?.level && (
-            <div id="vocabulary" className="mt-12 scroll-mt-24">
-              <h2 className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2">
+            <div className="mt-12">
+              <h2 id="vocabulary" className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2 scroll-mt-24">
                 <BookOpen className="w-5 h-5 text-[#00695c]" />
                 Vocabulary Trainer
               </h2>
@@ -527,9 +527,9 @@ export default function Dashboard() {
 
           {/* Meeting Rooms */}
           {(user?.role !== "student" || user?.level) && meetingRooms && meetingRooms.length > 0 && (
-            <div id="meetings" className="mt-12 scroll-mt-24">
+            <div className="mt-12">
               <VideoCall roomUrl={callRoom ?? ""} open={!!callRoom} onClose={() => setCallRoom(null)} />
-              <h2 className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2">
+              <h2 id="meetings" className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2 scroll-mt-24">
                 <Video className="w-5 h-5 text-[#00695c]" />
                 Meeting Rooms
               </h2>
@@ -603,7 +603,7 @@ function StudentAssignments() {
 
   return (
     <div className="mt-12">
-      <h2 className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2">
+      <h2 id="assignments" className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2 scroll-mt-24">
         <ClipboardList className="w-5 h-5 text-[#00695c]" />
         Assignments
       </h2>
@@ -850,9 +850,9 @@ function StudentChat() {
   };
 
   return (
-    <div id="chat" className="mt-12 scroll-mt-24">
+    <div className="mt-12">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-[#2c3e2d] flex items-center gap-2">
+        <h2 id="chat" className="text-xl font-semibold text-[#2c3e2d] flex items-center gap-2 scroll-mt-24">
           <MessageSquare className="w-5 h-5 text-[#00695c]" />
           {t("admin.tabChat")}
         </h2>
