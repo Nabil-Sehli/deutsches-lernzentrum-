@@ -8,6 +8,7 @@ import { CountdownTimer } from "@/components/CountdownTimer";
 import VocabularyTrainer from "@/components/VocabularyTrainer";
 import ProgressDashboard from "@/components/ProgressDashboard";
 import AchievementBadges from "@/components/AchievementBadges";
+import DashboardNav from "@/components/DashboardNav";
 import {
   Card,
   CardContent,
@@ -152,7 +153,8 @@ export default function Dashboard() {
       <Navigation />
 
       <div className="pt-24 pb-16 px-6">
-        <div className="max-w-[1200px] mx-auto">
+        <div className="max-w-[1200px] mx-auto lg:flex lg:gap-12">
+          <div className="flex-1 min-w-0">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-[#2c3e2d]">
@@ -400,7 +402,7 @@ export default function Dashboard() {
 
           {/* Lessons */}
           {myCenter && (user.role !== "student" || user.level) && (
-            <>
+            <div id="lessons">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-[#2c3e2d] flex items-center gap-2">
                   <GraduationCap className="w-5 h-5 text-[#00695c]" />
@@ -482,12 +484,12 @@ export default function Dashboard() {
                   })}
                 </div>
               )}
-            </>
+            </div>
           )}
 
           {/* Progress Dashboard */}
           {user?.role === "student" && user?.level && (
-            <div className="mt-12">
+            <div id="progress" className="mt-12">
               <h2 className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2">
                 <ClipboardCheck className="w-5 h-5 text-[#00695c]" />
                 Progress Dashboard
@@ -498,7 +500,7 @@ export default function Dashboard() {
 
           {/* Achievement Badges */}
           {user?.role === "student" && user?.level && (
-            <div className="mt-12">
+            <div id="achievements" className="mt-12">
               <h2 className="text-xl font-semibold text-[#2c3e2d] mb-2 flex items-center gap-2">
                 <Award className="w-5 h-5 text-[#00695c]" />
                 Achievements
@@ -509,7 +511,7 @@ export default function Dashboard() {
 
           {/* Assignments */}
           {myCenter && user?.role === "student" && user?.level && (
-            <StudentAssignments />
+            <div id="assignments"><StudentAssignments /></div>
           )}
 
           {/* Vocabulary Trainer */}
@@ -525,7 +527,7 @@ export default function Dashboard() {
 
           {/* Meeting Rooms */}
           {(user?.role !== "student" || user?.level) && meetingRooms && meetingRooms.length > 0 && (
-            <div className="mt-12">
+            <div id="meetings" className="mt-12">
               <VideoCall roomUrl={callRoom ?? ""} open={!!callRoom} onClose={() => setCallRoom(null)} />
               <h2 className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2">
                 <Video className="w-5 h-5 text-[#00695c]" />
@@ -559,6 +561,22 @@ export default function Dashboard() {
 
           {/* Chat */}
           {myCenter && (user.role !== "student" || user.level) && <StudentChat />}
+          </div>
+
+          {/* Sidebar Nav */}
+          {user?.role === "student" && user?.level && (
+            <DashboardNav
+              items={[
+                { id: "lessons", label: "Lessons", icon: GraduationCap, visible: !!myCenter },
+                { id: "progress", label: "Progress", icon: ClipboardCheck, visible: true },
+                { id: "achievements", label: "Achievements", icon: Award, visible: true },
+                { id: "assignments", label: "Assignments", icon: ClipboardList, visible: !!myCenter },
+                { id: "vocabulary", label: "Vocabulary", icon: BookOpen, visible: true },
+                { id: "meetings", label: "Meetings", icon: Video, visible: (meetingRooms?.length ?? 0) > 0 },
+                { id: "chat", label: "Chat", icon: MessageSquare, visible: !!myCenter },
+              ]}
+            />
+          )}
         </div>
       </div>
     </div>
