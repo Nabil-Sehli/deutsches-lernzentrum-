@@ -109,6 +109,7 @@ import { countries } from "@/data/countries";
 import { ImageCropper } from "@/components/ImageCropper";
 import CalendarView from "@/components/CalendarView";
 import GroupManager from "@/components/GroupManager";
+import VocabularyManager from "@/components/VocabularyManager";
 
 function CreateLessonDialog({
   open,
@@ -759,6 +760,13 @@ export default function Admin() {
                 Groups
               </TabsTrigger>
               <TabsTrigger
+                value="vocabulary"
+                className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                Vocabulary
+              </TabsTrigger>
+              <TabsTrigger
                 value="settings"
                 className="rounded-full px-5 py-2 data-[state=active]:bg-[#00695c] data-[state=active]:text-white"
               >
@@ -1331,6 +1339,12 @@ export default function Admin() {
             {/* Groups Tab */}
             <TabsContent value="groups">
               <GroupManager />
+            </TabsContent>
+
+            {/* Vocabulary Tab */}
+            <TabsContent value="vocabulary">
+              <h2 className="text-lg font-semibold text-[#2c3e2d] mb-4">Vocabulary Words</h2>
+              <VocabularyManager />
             </TabsContent>
 
             {/* Settings Tab */}

@@ -476,3 +476,41 @@ export const reviews = mysqlTable("reviews", {
 
 export type Review = typeof reviews.$inferSelect;
 export type InsertReview = typeof reviews.$inferInsert;
+
+export const vocabularyWords = mysqlTable("vocabulary_words", {
+  id: serial("id").primaryKey(),
+  centerId: bigint("centerId", { mode: "number", unsigned: true }).notNull(),
+  lessonId: bigint("lessonId", { mode: "number", unsigned: true }),
+  word: varchar("word", { length: 255 }).notNull(),
+  translation: varchar("translation", { length: 255 }).notNull(),
+  example: text("example"),
+  partOfSpeech: varchar("partOfSpeech", { length: 50 }),
+  level: mysqlEnum("level", ["a1", "a2", "b1", "b2", "c1", "c2"]).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  centerIdIdx: index("vocab_centerId_idx").on(table.centerId),
+  lessonIdIdx: index("vocab_lessonId_idx").on(table.lessonId),
+  levelIdx: index("vocab_level_idx").on(table.level),
+}));
+
+export type VocabularyWord = typeof vocabularyWords.$inferSelect;
+export type InsertVocabularyWord = typeof vocabularyWords.$inferInsert;
+
+export const wordReviews = mysqlTable("word_reviews", {
+  id: serial("id").primaryKey(),
+  wordId: bigint("wordId", { mode: "number", unsigned: true }).notNull(),
+  studentId: bigint("studentId", { mode: "number", unsigned: true }).notNull(),
+  ease: bigint("ease", { mode: "number" }).default(250).notNull(),
+  interval: bigint("interval", { mode: "number" }).default(0).notNull(),
+  repetitions: bigint("repetitions", { mode: "number" }).default(0).notNull(),
+  nextReviewAt: timestamp("nextReviewAt").notNull(),
+  lastReviewAt: timestamp("lastReviewAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  wordIdIdx: index("word_reviews_wordId_idx").on(table.wordId),
+  studentIdIdx: index("word_reviews_studentId_idx").on(table.studentId),
+  wordStudentIdx: index("word_reviews_wordStudent_idx").on(table.wordId, table.studentId),
+}));
+
+export type WordReview = typeof wordReviews.$inferSelect;
+export type InsertWordReview = typeof wordReviews.$inferInsert;

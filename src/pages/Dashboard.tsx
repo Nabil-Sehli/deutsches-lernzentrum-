@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/providers/trpc";
 import { CountdownTimer } from "@/components/CountdownTimer";
+import VocabularyTrainer from "@/components/VocabularyTrainer";
 import {
   Card,
   CardContent,
@@ -531,6 +532,17 @@ export default function Dashboard() {
           {/* Assignments */}
           {myCenter && user?.role === "student" && user?.level && (
             <StudentAssignments />
+          )}
+
+          {/* Vocabulary Trainer */}
+          {user?.role === "student" && user?.level && (
+            <div id="vocabulary" className="mt-12">
+              <h2 className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-[#00695c]" />
+                Vocabulary Trainer
+              </h2>
+              <VocabularyTrainer />
+            </div>
           )}
 
           {/* Meeting Rooms */}
