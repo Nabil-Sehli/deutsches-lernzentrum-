@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { quizAttempts, questions, lessons, users } from "@db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 export const quizRouter = createRouter({
@@ -72,6 +72,66 @@ export const quizRouter = createRouter({
       });
     }
     return results;
+  }),
+
+  progressDashboard: authedQuery.query(async ({ ctx }) => {
+    const db = getDb();
+    const attempts = await db
+      .select()
+      .from(quizAttempts)
+      .where(eq(quizAttempts.studentId, ctx.user.id))
+      .orderBy(quizAttempts.completedAt);
+
+    const lessonIds = [...new Set(attempts.map((a) => a.lessonId))];
+    const centerLessons = lessonIds.length > 0
+      ? await db
+          .select()
+          .from(lessons)
+          .where(inArray(lessons.id, lessonIds))
+      : [];
+    const lessonMap = new Map(centerLessons.map((l) => [l.id, l]));
+
+    const scoresOverTime = attempts.map((a) => {
+      const lesson = lessonMap.get(a.lessonId);
+      return {
+        date: a.completedAt,
+        score: Math.round((a.score / a.totalQuestions) * 100),
+        lessonTitle: lesson?.title ?? "Unknown",
+        lessonLevel: lesson?.level ?? null,
+      };
+    });
+
+    const levelStats: Record<string, { total: number; scoreSum: number; lessons: Set<number> }> = {};
+    for (const a of attempts) {
+      const lesson = lessonMap.get(a.lessonId);
+      const lvl = lesson?.level ?? "unknown";
+      if (!levelStats[lvl]) levelStats[lvl] = { total: 0, scoreSum: 0, lessons: new Set() };
+      levelStats[lvl].total++;
+      levelStats[lvl].scoreSum += Math.round((a.score / a.totalQuestions) * 100);
+      levelStats[lvl].lessons.add(a.lessonId);
+    }
+
+    const levelBreakdown = Object.entries(levelStats).map(([level, data]) => ({
+      level,
+      attempts: data.total,
+      avgScore: Math.round(data.scoreSum / data.total),
+      lessonsCompleted: data.lessons.size,
+    }));
+
+    const lessonsCompleted = new Set(attempts.map((a) => a.lessonId)).size;
+    const totalQuizzes = attempts.length;
+    const avgScore = totalQuizzes > 0
+      ? Math.round(attempts.reduce((s, a) => s + (a.score / a.totalQuestions) * 100, 0) / totalQuizzes)
+      : 0;
+
+    return {
+      scoresOverTime,
+      levelBreakdown,
+      lessonsCompleted,
+      totalQuizzes,
+      avgScore,
+      currentLevel: ctx.user.level ?? null,
+    };
   }),
 
   lessonAttempts: authedQuery

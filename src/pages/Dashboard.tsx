@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { trpc } from "@/providers/trpc";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import VocabularyTrainer from "@/components/VocabularyTrainer";
+import ProgressDashboard from "@/components/ProgressDashboard";
 import {
   Card,
   CardContent,
@@ -483,50 +484,15 @@ export default function Dashboard() {
             </>
           )}
 
-          {/* Quiz History */}
-          {attempts && attempts.length > 0 && (
-            <>
+          {/* Progress Dashboard */}
+          {user?.role === "student" && user?.level && (
+            <div className="mt-12">
               <h2 className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2">
                 <ClipboardCheck className="w-5 h-5 text-[#00695c]" />
-                {t("dashboard.quizHistory")}
+                Progress Dashboard
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {attempts.slice(0, 6).map((attempt) => (
-                  <Card key={attempt.id} className="clay-card border-0">
-                    <CardContent className="p-5">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-[#2c3e2d]">
-                            {attempt.lessonTitle}
-                          </p>
-                          <p className="text-xs text-[#78909c] mt-1">
-                            {new Date(attempt.completedAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <span
-                            className={`text-lg font-bold ${
-                              (attempt.score / attempt.totalQuestions) * 100 >=
-                              70
-                                ? "text-[#00695c]"
-                                : "text-amber-600"
-                            }`}
-                          >
-                            {attempt.score}/{attempt.totalQuestions}
-                          </span>
-                          <p className="text-xs text-[#78909c]">
-                            {Math.round(
-                              (attempt.score / attempt.totalQuestions) * 100
-                            )}
-                            %
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </>
+              <ProgressDashboard />
+            </div>
           )}
 
           {/* Assignments */}

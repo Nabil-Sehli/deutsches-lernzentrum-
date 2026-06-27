@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
-  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -123,7 +122,7 @@ export default function VocabularyTrainer() {
           <p className="text-[#78909c] text-sm">You reviewed {sessionWords.length} word{sessionWords.length > 1 ? "s" : ""}.</p>
         </div>
         <div className="space-y-2 mb-6">
-          {sessionWords.map((w, i) => (
+          {sessionWords.map((w) => (
             <div key={w.id} className="bg-white rounded-xl border border-[#00695c]/10 p-4 flex items-start gap-3">
               {w.quality != null && w.quality >= 4 ? (
                 <CheckCircle2 className="w-5 h-5 text-[#00695c] shrink-0 mt-0.5" />
