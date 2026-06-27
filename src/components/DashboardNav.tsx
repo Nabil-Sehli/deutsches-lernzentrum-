@@ -1,18 +1,10 @@
 import { useEffect, useState } from "react";
-import {
-  ClipboardCheck,
-  Award,
-  ClipboardList,
-  BookOpen,
-  MessageSquare,
-  GraduationCap,
-  Video,
-} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 interface NavItem {
   id: string;
   label: string;
-  icon: typeof GraduationCap;
+  icon: LucideIcon;
   visible: boolean;
 }
 
@@ -29,13 +21,20 @@ export default function DashboardNav({ items }: Props) {
 
     const observer = new IntersectionObserver(
       (entries) => {
+        let best: string | null = null;
+        let bestTop = Infinity;
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            setActive(entry.target.id);
+            const rect = entry.boundingClientRect;
+            if (rect.top < bestTop) {
+              bestTop = rect.top;
+              best = entry.target.id;
+            }
           }
         }
+        if (best) setActive(best);
       },
-      { rootMargin: "-80px 0px -60% 0px" }
+      { rootMargin: "-80px 0px -50% 0px" }
     );
 
     for (const id of visible) {
