@@ -17,6 +17,7 @@ import { groupsRouter } from "./groups-router";
 import { calendarRouter } from "./calendar-router";
 import { reviewsRouter } from "./reviews-router";
 import { vocabularyRouter } from "./vocabulary-router";
+import { achievementsRouter } from "./achievements-router";
 import { createRouter, publicQuery } from "./middleware";
 
 export const appRouter = createRouter({
@@ -40,6 +41,7 @@ export const appRouter = createRouter({
   calendar: calendarRouter,
   reviews: reviewsRouter,
   vocabulary: vocabularyRouter,
+  achievements: achievementsRouter,
 });
 
 export type AppRouter = typeof appRouter;

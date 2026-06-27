@@ -514,3 +514,31 @@ export const wordReviews = mysqlTable("word_reviews", {
 
 export type WordReview = typeof wordReviews.$inferSelect;
 export type InsertWordReview = typeof wordReviews.$inferInsert;
+
+export const achievements = mysqlTable("achievements", {
+  id: serial("id").primaryKey(),
+  key: varchar("key", { length: 100 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  icon: varchar("icon", { length: 10 }),
+  requirementType: varchar("requirementType", { length: 50 }).notNull(),
+  requirementCount: int("requirementCount").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Achievement = typeof achievements.$inferSelect;
+export type InsertAchievement = typeof achievements.$inferInsert;
+
+export const userAchievements = mysqlTable("user_achievements", {
+  id: serial("id").primaryKey(),
+  userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+  achievementId: bigint("achievementId", { mode: "number", unsigned: true }).notNull(),
+  unlockedAt: timestamp("unlockedAt").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("user_achievements_userId_idx").on(table.userId),
+  achievementIdIdx: index("user_achievements_achievementId_idx").on(table.achievementId),
+  userAchievementIdx: index("user_achievements_userAchievement_idx").on(table.userId, table.achievementId),
+}));
+
+export type UserAchievement = typeof userAchievements.$inferSelect;
+export type InsertUserAchievement = typeof userAchievements.$inferInsert;

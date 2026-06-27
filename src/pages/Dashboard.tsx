@@ -7,6 +7,7 @@ import { trpc } from "@/providers/trpc";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import VocabularyTrainer from "@/components/VocabularyTrainer";
 import ProgressDashboard from "@/components/ProgressDashboard";
+import AchievementBadges from "@/components/AchievementBadges";
 import {
   Card,
   CardContent,
@@ -492,6 +493,17 @@ export default function Dashboard() {
                 Progress Dashboard
               </h2>
               <ProgressDashboard />
+            </div>
+          )}
+
+          {/* Achievement Badges */}
+          {user?.role === "student" && user?.level && (
+            <div className="mt-12">
+              <h2 className="text-xl font-semibold text-[#2c3e2d] mb-2 flex items-center gap-2">
+                <Award className="w-5 h-5 text-[#00695c]" />
+                Achievements
+              </h2>
+              <AchievementBadges />
             </div>
           )}
 
