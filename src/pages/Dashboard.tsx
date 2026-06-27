@@ -402,7 +402,7 @@ export default function Dashboard() {
 
           {/* Lessons */}
           {myCenter && (user.role !== "student" || user.level) && (
-            <div id="lessons">
+            <div id="lessons" className="scroll-mt-24">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-[#2c3e2d] flex items-center gap-2">
                   <GraduationCap className="w-5 h-5 text-[#00695c]" />
@@ -489,7 +489,7 @@ export default function Dashboard() {
 
           {/* Progress Dashboard */}
           {user?.role === "student" && user?.level && (
-            <div id="progress" className="mt-12">
+            <div id="progress" className="mt-12 scroll-mt-24">
               <h2 className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2">
                 <ClipboardCheck className="w-5 h-5 text-[#00695c]" />
                 Progress Dashboard
@@ -500,7 +500,7 @@ export default function Dashboard() {
 
           {/* Achievement Badges */}
           {user?.role === "student" && user?.level && (
-            <div id="achievements" className="mt-12">
+            <div id="achievements" className="mt-12 scroll-mt-24">
               <h2 className="text-xl font-semibold text-[#2c3e2d] mb-2 flex items-center gap-2">
                 <Award className="w-5 h-5 text-[#00695c]" />
                 Achievements
@@ -511,12 +511,12 @@ export default function Dashboard() {
 
           {/* Assignments */}
           {myCenter && user?.role === "student" && user?.level && (
-            <div id="assignments"><StudentAssignments /></div>
+            <div id="assignments" className="scroll-mt-24"><StudentAssignments /></div>
           )}
 
           {/* Vocabulary Trainer */}
           {user?.role === "student" && user?.level && (
-            <div id="vocabulary" className="mt-12">
+            <div id="vocabulary" className="mt-12 scroll-mt-24">
               <h2 className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-[#00695c]" />
                 Vocabulary Trainer
@@ -527,7 +527,7 @@ export default function Dashboard() {
 
           {/* Meeting Rooms */}
           {(user?.role !== "student" || user?.level) && meetingRooms && meetingRooms.length > 0 && (
-            <div id="meetings" className="mt-12">
+            <div id="meetings" className="mt-12 scroll-mt-24">
               <VideoCall roomUrl={callRoom ?? ""} open={!!callRoom} onClose={() => setCallRoom(null)} />
               <h2 className="text-xl font-semibold text-[#2c3e2d] mb-6 flex items-center gap-2">
                 <Video className="w-5 h-5 text-[#00695c]" />
@@ -850,7 +850,7 @@ function StudentChat() {
   };
 
   return (
-    <div id="chat" className="mt-12">
+    <div id="chat" className="mt-12 scroll-mt-24">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-[#2c3e2d] flex items-center gap-2">
           <MessageSquare className="w-5 h-5 text-[#00695c]" />
