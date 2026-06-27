@@ -110,6 +110,7 @@ import { ImageCropper } from "@/components/ImageCropper";
 import CalendarView from "@/components/CalendarView";
 import GroupManager from "@/components/GroupManager";
 import VocabularyManager from "@/components/VocabularyManager";
+import LessonAnalytics from "@/components/LessonAnalytics";
 
 function CreateLessonDialog({
   open,
@@ -522,6 +523,7 @@ export default function Admin() {
   const tab = searchParams.get("tab") ?? "lessons";
   const [createLessonOpen, setCreateLessonOpen] = useState(false);
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
+  const [analyticsLessonId, setAnalyticsLessonId] = useState<number | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [studentsView, setStudentsView] = useState<"students" | "analytics">("students");
@@ -872,6 +874,13 @@ export default function Admin() {
                                 {t("admin.viewLesson")}
                                 <ArrowRight className="w-3 h-3" />
                               </Link>
+                              <button
+                                onClick={() => setAnalyticsLessonId(lesson.id)}
+                                className="text-xs text-[#00695c] hover:underline flex items-center gap-1"
+                              >
+                                <BarChart3 className="w-3 h-3" />
+                                Analytics
+                              </button>
                             </div>
                           </div>
                           {deleteConfirmId === lesson.id ? (
@@ -1384,6 +1393,12 @@ export default function Admin() {
               )}
             </TabsContent>
           </Tabs>
+
+          <LessonAnalytics
+            lessonId={analyticsLessonId ?? 0}
+            open={analyticsLessonId !== null}
+            onClose={() => setAnalyticsLessonId(null)}
+          />
         </div>
       </div>
     </div>

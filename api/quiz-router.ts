@@ -212,4 +212,62 @@ export const quizRouter = createRouter({
         new Date(a.completedAt).getTime()
     );
   }),
+
+  lessonAnalytics: authedQuery
+    .input(z.object({ lessonId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db = getDb();
+      if (!ctx.user.centerId) throw new TRPCError({ code: "NOT_FOUND", message: "No center" });
+
+      const [lesson] = await db
+        .select()
+        .from(lessons)
+        .where(and(eq(lessons.id, input.lessonId), eq(lessons.centerId, ctx.user.centerId)));
+      if (!lesson) throw new TRPCError({ code: "NOT_FOUND", message: "Lesson not found" });
+
+      const students = await db
+        .select({ id: users.id, name: users.name, level: users.level })
+        .from(users)
+        .where(and(eq(users.centerId, ctx.user.centerId), eq(users.role, "student")))
+        .orderBy(users.name);
+
+      const attempts = await db
+        .select()
+        .from(quizAttempts)
+        .where(eq(quizAttempts.lessonId, input.lessonId))
+        .orderBy(quizAttempts.completedAt);
+
+      const attemptsByStudent = new Map<number, typeof attempts>();
+      for (const a of attempts) {
+        if (!attemptsByStudent.has(a.studentId)) attemptsByStudent.set(a.studentId, []);
+        attemptsByStudent.get(a.studentId)!.push(a);
+      }
+
+      const studentStats = students.map((s) => {
+        const studentAttempts = attemptsByStudent.get(s.id) ?? [];
+        const bestScore = studentAttempts.length > 0
+          ? Math.max(...studentAttempts.map((a) => Math.round((a.score / a.totalQuestions) * 100)))
+          : null;
+        return {
+          studentId: s.id,
+          studentName: s.name,
+          studentLevel: s.level,
+          completed: studentAttempts.length > 0,
+          attemptCount: studentAttempts.length,
+          bestScore,
+          lastAttemptAt: studentAttempts.length > 0 ? studentAttempts[studentAttempts.length - 1].completedAt : null,
+        };
+      });
+
+      const completedCount = studentStats.filter((s) => s.completed).length;
+
+      return {
+        lessonTitle: lesson.title,
+        lessonLevel: lesson.level,
+        totalStudents: students.length,
+        completedCount,
+        completionRate: students.length > 0 ? Math.round((completedCount / students.length) * 100) : 0,
+        students: studentStats,
+      };
+    }),
 });
