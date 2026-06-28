@@ -21,39 +21,69 @@ A full-stack platform for German language learning. Teachers can manage courses 
 - **Auth:** JWT (jose) + bcrypt
 - **i18n:** i18next (DE/EN)
 
-## Getting Started
+## Quick Start (Local Testing)
 
-### Install dependencies
+### Prerequisites
+
+- **Node.js** 20+
+- **Docker Desktop** (for MySQL)
+- **npm**
+
+### 1. Clone & install
 
 ```bash
+git clone https://github.com/Nabil-Sehli/deutsches-lernzentrum-.git
+cd deutsches-lernzentrum-
 npm install
 ```
 
-### Configure environment
+### 2. Start MySQL with Docker
+
+```bash
+docker run -d --name mysql-lernzentrum \
+  -e MYSQL_ROOT_PASSWORD=root \
+  -e MYSQL_DATABASE=german_learning \
+  -p 3306:3306 \
+  mysql:8
+```
+
+### 3. Configure environment
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` with your MySQL connection string (default: `mysql://root:root@localhost:3306/german_learning`).
+Edit `.env` and fill in at minimum:
 
-### Push database schema
+```
+APP_SECRET=any-random-string-here
+DATABASE_URL=mysql://root:root@localhost:3306/german_learning
+```
+
+S3 and SendGrid can be left blank — image uploads and email verification will be skipped.
+
+### 4. Push database schema & seed
 
 ```bash
 npm run db:push
-```
-
-### Seed admin user
-
-```bash
 npm run db:seed
 ```
 
-### Start dev server
+This creates all tables and a default admin account.
+
+### 5. Start the dev server
 
 ```bash
 npm run dev
 ```
+
+Open **http://localhost:5173** in your browser.
+
+### Default login
+
+After seeding, you can log in with the admin credentials (check the seed script for details).
+
+> **Note:** Image uploads and email verification require S3 and SendGrid configuration. For local testing, these features are automatically disabled when the env vars are missing.
 
 ## Scripts
 
