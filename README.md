@@ -79,9 +79,43 @@ npm run dev
 
 Open **http://localhost:5173** in your browser.
 
-### Default login
+### Default accounts
 
-After seeding, you can log in with the admin credentials (check the seed script for details).
+After seeding, the following accounts are available (password for all: `password123`):
+
+| Email | Role | Description |
+|-------|------|-------------|
+| `admin@example.com` | Admin | Platform admin — approves center requests |
+| `teacher@example.com` | Teacher | Runs a center (Berlin German School) |
+| `dev-teacher@dev.local` | Teacher | Runs a second center (Dev Test Center) |
+| `dev-student@dev.local` | Student | Already assigned to a center |
+| `anna@example.com` | Student | Needs to join a center via invite code |
+| `ben@example.com` | Student | Needs to join a center via invite code |
+| `clara@example.com` | Student | Needs to join a center via invite code |
+
+### Testing Flow
+
+#### For a new teacher signing up:
+
+1. **Sign up** at `/signup` with role "teacher"
+2. Go to **Dashboard** and click **"Request Center"** — fill in center details
+3. Log out, then log in as **`admin@example.com`** (password: `password123`)
+4. Go to **Admin** panel and find the **Center Requests** tab
+5. **Approve** the pending request
+6. The teacher now has a fully active center
+
+#### For a new student joining a center:
+
+1. **Sign up** at `/signup` with role "student"
+2. Go to **Dashboard** and enter an **invite code** from the center
+3. Once accepted, the student's lessons and assignments appear
+4. The teacher can generate invite codes in **Admin → Invites tab**
+
+#### Generating invite codes (teacher):
+
+1. Log in as a teacher
+2. Go to **Admin → Invites**
+3. Click **Generate Code** — share this code with students
 
 > **Note:** Image uploads and email verification require S3 and SendGrid configuration. For local testing, these features are automatically disabled when the env vars are missing.
 
