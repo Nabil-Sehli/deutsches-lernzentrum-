@@ -9,6 +9,7 @@ import VocabularyTrainer from "@/components/VocabularyTrainer";
 import ProgressDashboard from "@/components/ProgressDashboard";
 import AchievementBadges from "@/components/AchievementBadges";
 import StreakDisplay from "@/components/StreakDisplay";
+import Leaderboard from "@/components/Leaderboard";
 import DashboardNav from "@/components/DashboardNav";
 import {
   Card,
@@ -31,6 +32,7 @@ import {
   PlayCircle,
   ClipboardCheck,
   Award,
+  Trophy,
   KeyRound,
   BookOpen,
   ArrowRight,
@@ -517,6 +519,17 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* Leaderboard */}
+          {user?.role === "student" && user?.level && myCenter && (
+            <div className="mt-12">
+              <h2 id="leaderboard" className="text-xl font-semibold text-[#2c3e2d] mb-4 flex items-center gap-2 scroll-mt-24">
+                <Trophy className="w-5 h-5 text-[#00695c]" />
+                Leaderboard
+              </h2>
+              <Leaderboard />
+            </div>
+          )}
+
           {/* Assignments */}
           {myCenter && user?.role === "student" && user?.level && (
             <div><StudentAssignments /></div>
@@ -578,6 +591,7 @@ export default function Dashboard() {
                 { id: "lessons", label: "Lessons", icon: GraduationCap, visible: !!myCenter },
                 { id: "progress", label: "Progress", icon: ClipboardCheck, visible: true },
                 { id: "achievements", label: "Achievements", icon: Award, visible: true },
+                { id: "leaderboard", label: "Leaderboard", icon: Trophy, visible: !!myCenter },
                 { id: "assignments", label: "Assignments", icon: ClipboardList, visible: !!myCenter },
                 { id: "vocabulary", label: "Vocabulary", icon: BookOpen, visible: true },
                 { id: "meetings", label: "Meetings", icon: Video, visible: (meetingRooms?.length ?? 0) > 0 },

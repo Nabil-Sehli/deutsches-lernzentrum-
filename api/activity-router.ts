@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { dailyActivity } from "@db/schema";
+import { dailyActivity, quizAttempts, wordReviews, submissions, users } from "@db/schema";
 import { eq, and, sql } from "drizzle-orm";
 
 function todayString() {
@@ -123,4 +123,96 @@ export const activityRouter = createRouter({
 
     return week;
   }),
+
+  leaderboard: authedQuery
+    .input(z.object({ limit: z.number().min(1).max(50).default(10) }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = getDb();
+      if (!ctx.user.centerId) return [];
+
+      const limit = input?.limit ?? 10;
+
+      const students = await db
+        .select({ id: users.id, name: users.name, level: users.level, avatar: users.avatar })
+        .from(users)
+        .where(and(eq(users.centerId, ctx.user.centerId), eq(users.role, "student")));
+
+      const studentIds = students.map((s) => s.id);
+      if (studentIds.length === 0) return [];
+
+      const allAttempts = await db
+        .select()
+        .from(quizAttempts)
+        .where(sql`${quizAttempts.studentId} IN (${sql.join(studentIds.map((id) => sql`${id}`), sql`, `)})`);
+
+      const allReviews = await db
+        .select()
+        .from(wordReviews)
+        .where(sql`${wordReviews.studentId} IN (${sql.join(studentIds.map((id) => sql`${id}`), sql`, `)})`);
+
+      const allSubmissions = await db
+        .select()
+        .from(submissions)
+        .where(sql`${submissions.studentId} IN (${sql.join(studentIds.map((id) => sql`${id}`), sql`, `)})`);
+
+      const allDailyActivity = await db
+        .select()
+        .from(dailyActivity)
+        .where(sql`${dailyActivity.userId} IN (${sql.join(studentIds.map((id) => sql`${id}`), sql`, `)})`);
+
+      const rankings = students.map((student) => {
+        const quizAttemptsForStudent = allAttempts.filter((a) => a.studentId === student.id);
+        const reviewsForStudent = allReviews.filter((r) => r.studentId === student.id);
+        const submissionsForStudent = allSubmissions.filter((s) => s.studentId === student.id);
+        const activityForStudent = allDailyActivity.filter((d) => d.userId === student.id);
+
+        const uniqueLessons = new Set(quizAttemptsForStudent.map((a) => a.lessonId)).size;
+
+        const quizPoints = quizAttemptsForStudent.reduce((sum, a) => {
+          const score = a.totalQuestions > 0 ? (a.score / a.totalQuestions) * 100 : 0;
+          return sum + 50 + Math.round(score * 0.5);
+        }, 0);
+
+        const vocabPoints = reviewsForStudent.length * 10;
+
+        const submissionPoints = submissionsForStudent.length * 30;
+
+        const dateStrs = activityForStudent.map((d) => toDateStr(d.date));
+        const today = todayString();
+        let currentStreak = 0;
+        if (dateStrs.length > 0) {
+          const diff = daysBetween(today, dateStrs[0]);
+          if (diff <= 1) {
+            currentStreak = 1;
+            for (let i = 1; i < dateStrs.length; i++) {
+              const d = daysBetween(dateStrs[i - 1], dateStrs[i]);
+              if (d === 1) currentStreak++;
+              else break;
+            }
+          }
+        }
+
+        const streakBonus = currentStreak * 5;
+        const totalPoints = quizPoints + vocabPoints + submissionPoints + streakBonus;
+
+        return {
+          studentId: student.id,
+          studentName: student.name,
+          studentLevel: student.level,
+          studentAvatar: student.avatar,
+          totalPoints,
+          quizPoints,
+          vocabPoints,
+          submissionPoints,
+          streakBonus,
+          currentStreak,
+          lessonsCompleted: uniqueLessons,
+          isCurrentUser: student.id === ctx.user.id,
+        };
+      });
+
+      rankings.sort((a, b) => b.totalPoints - a.totalPoints);
+
+      return rankings.slice(0, limit);
+    }),
 });

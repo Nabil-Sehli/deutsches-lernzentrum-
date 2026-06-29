@@ -5,6 +5,7 @@ import { trpc } from "@/providers/trpc";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./LanguageSwitcher";
 import CenterRequestForm from "./CenterRequestForm";
+import ThemeToggle from "./ThemeToggle";
 import {
   Menu,
   X,
@@ -185,6 +186,7 @@ export default function Navigation() {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
+            <ThemeToggle />
             <LanguageSwitcher />
             {isAuthenticated && (
               <div className="relative" ref={notifRef}>
@@ -380,7 +382,8 @@ export default function Navigation() {
                     <User className="w-5 h-5" />
                     {t("nav.profile")}
                   </Link>
-                  <div className="px-4">
+                  <div className="px-4 flex items-center gap-3">
+                    <ThemeToggle />
                     <LanguageSwitcher />
                   </div>
                   <hr className="border-[#E6DFD3] my-2" />
