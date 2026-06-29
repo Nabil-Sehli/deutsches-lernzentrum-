@@ -42,3 +42,6 @@ build/
 # Test coverage
 coverage/
 .nyc_output/
+
+# Downloaded binaries
+*.zip
