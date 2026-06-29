@@ -8,6 +8,7 @@ import { CountdownTimer } from "@/components/CountdownTimer";
 import VocabularyTrainer from "@/components/VocabularyTrainer";
 import ProgressDashboard from "@/components/ProgressDashboard";
 import AchievementBadges from "@/components/AchievementBadges";
+import StreakDisplay from "@/components/StreakDisplay";
 import DashboardNav from "@/components/DashboardNav";
 import {
   Card,
@@ -215,6 +216,13 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Study Streak */}
+          {user?.role === "student" && (
+            <div className="mb-6">
+              <StreakDisplay />
+            </div>
+          )}
 
           {/* Center Loading */}
           {centerLoading && (

@@ -30,8 +30,10 @@ export default function QuizPage() {
   const [answers, setAnswers] = useState<number[]>([]);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
 
+  const logActivity = trpc.activity.log.useMutation();
   const submitMutation = trpc.quiz.submit.useMutation({
     onSuccess: (data) => {
+      logActivity.mutate();
       navigate(`/quiz/${data.attemptId}`);
     },
   });

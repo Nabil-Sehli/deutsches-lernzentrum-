@@ -1,0 +1,9 @@
+CREATE TABLE `daily_activity` (
+  `id` SERIAL PRIMARY KEY,
+  `userId` BIGINT UNSIGNED NOT NULL,
+  `date` VARCHAR(10) NOT NULL,
+  `activityCount` INT NOT NULL DEFAULT 1,
+  `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE INDEX `daily_activity_user_date_idx` (`userId`, `date`)
+);

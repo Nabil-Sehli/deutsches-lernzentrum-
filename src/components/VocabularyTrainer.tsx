@@ -41,6 +41,7 @@ type SessionWord = {
 export default function VocabularyTrainer() {
   const { data: words, isLoading, refetch } = trpc.vocabulary.listDue.useQuery();
   const recordReview = trpc.vocabulary.recordReview.useMutation();
+  const logActivity = trpc.activity.log.useMutation();
   const { data: stats } = trpc.vocabulary.stats.useQuery();
 
   const [sessionWords, setSessionWords] = useState<SessionWord[]>([]);
@@ -77,6 +78,7 @@ export default function VocabularyTrainer() {
     if (!current) return;
 
     recordReview.mutate({ wordId: current.id, quality });
+    logActivity.mutate();
 
     const updated = [...sessionWords];
     updated[index] = { ...updated[index], quality };

@@ -10,6 +10,7 @@ import {
   bigint,
   index,
   boolean,
+  uniqueIndex,
 } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
@@ -542,3 +543,17 @@ export const userAchievements = mysqlTable("user_achievements", {
 
 export type UserAchievement = typeof userAchievements.$inferSelect;
 export type InsertUserAchievement = typeof userAchievements.$inferInsert;
+
+export const dailyActivity = mysqlTable("daily_activity", {
+  id: serial("id").primaryKey(),
+  userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+  date: varchar("date", { length: 10 }).notNull(),
+  activityCount: int("activityCount").notNull().default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull().onUpdateNow(),
+}, (table) => ({
+  userDateIdx: uniqueIndex("daily_activity_user_date_idx").on(table.userId, table.date),
+}));
+
+export type DailyActivity = typeof dailyActivity.$inferSelect;
+export type InsertDailyActivity = typeof dailyActivity.$inferInsert;
