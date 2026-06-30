@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./LanguageSwitcher";
 import CenterRequestForm from "./CenterRequestForm";
 import ThemeToggle from "./ThemeToggle";
+import { useUIStore } from "@/stores/ui";
 import {
   Menu,
   X,
@@ -33,7 +34,12 @@ export default function Navigation() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileOpen = useUIStore((s) => s.mobileNavOpen);
+  const setMobileOpen = useUIStore((s) => s.setMobileNavOpen);
+  const requestFormOpen = useUIStore((s) => s.requestCenterOpen);
+  const setRequestFormOpen = useUIStore((s) => s.setRequestCenterOpen);
+  const notifOpen = useUIStore((s) => s.notificationOpen);
+  const setNotifOpen = useUIStore((s) => s.setNotificationOpen);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -48,8 +54,6 @@ export default function Navigation() {
 
   const isTeacher = user?.role === "teacher";
   const isAdmin = user?.role === "admin";
-  const [requestFormOpen, setRequestFormOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
   const myRequest = trpc.centerRequest.myRequest.useQuery(undefined, {

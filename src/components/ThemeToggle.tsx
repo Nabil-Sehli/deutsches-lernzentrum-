@@ -1,14 +1,9 @@
 import { Moon, Sun, Monitor } from "lucide-react";
-import { useTheme } from "@/providers/theme";
+import { useThemeStore } from "@/stores/theme";
 
 export default function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
-
-  const cycle = () => {
-    if (theme === "light") setTheme("dark");
-    else if (theme === "dark") setTheme("system");
-    else setTheme("light");
-  };
+  const theme = useThemeStore((s) => s.theme);
+  const cycleTheme = useThemeStore((s) => s.cycleTheme);
 
   const icon =
     theme === "light" ? <Sun className="w-4 h-4" /> :
@@ -22,7 +17,7 @@ export default function ThemeToggle() {
 
   return (
     <button
-      onClick={cycle}
+      onClick={cycleTheme}
       title={`Theme: ${label} (click to change)`}
       className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[#2c3e2d] dark:text-[#e8f5e9] bg-white/60 dark:bg-[#1a2e2c] hover:bg-white dark:hover:bg-[#243d3a] border border-[#2c3e2d]/10 dark:border-white/10 transition-colors"
     >
