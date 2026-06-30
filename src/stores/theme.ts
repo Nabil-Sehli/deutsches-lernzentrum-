@@ -23,6 +23,10 @@ function readStoredTheme(): Theme {
   return "system";
 }
 
+function computeResolvedTheme(theme: Theme, systemTheme: ResolvedTheme): ResolvedTheme {
+  return theme === "system" ? systemTheme : (theme as ResolvedTheme);
+}
+
 interface ThemeStore {
   theme: Theme;
   resolvedTheme: ResolvedTheme;
@@ -32,14 +36,28 @@ interface ThemeStore {
   init: () => () => void;
 }
 
+function createInitialState(): Pick<ThemeStore, "theme" | "systemTheme" | "resolvedTheme"> {
+  const theme = readStoredTheme();
+  const systemTheme = getSystemTheme();
+  const resolvedTheme = computeResolvedTheme(theme, systemTheme);
+  
+  // Apply immediately for SSR/pre-hydration sync
+  if (typeof window !== "undefined") {
+    applyTheme(resolvedTheme);
+  }
+  
+  return { theme, systemTheme, resolvedTheme };
+}
+
 export const useThemeStore = create<ThemeStore>((set, get) => ({
-  theme: readStoredTheme(),
-  resolvedTheme: typeof window === "undefined" ? "light" : (getSystemTheme() === "dark" && readStoredTheme() === "dark") ? "dark" : "light",
-  systemTheme: typeof window === "undefined" ? "light" : getSystemTheme(),
+  ...createInitialState(),
 
   setTheme: (theme) => {
-    set({ theme });
+    const { systemTheme } = get();
+    const resolved = computeResolvedTheme(theme, systemTheme);
     localStorage.setItem(STORAGE_KEY, theme);
+    applyTheme(resolved);
+    set({ theme, resolvedTheme: resolved });
   },
 
   cycleTheme: () => {
@@ -49,19 +67,13 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
   },
 
   init: () => {
-    const apply = () => {
-      const { theme, systemTheme } = get();
-      const resolved = theme === "system" ? systemTheme : (theme as ResolvedTheme);
-      applyTheme(resolved);
-      set({ resolvedTheme: resolved });
-    };
-
-    apply();
-
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = () => {
-      set({ systemTheme: mediaQuery.matches ? "dark" : "light" });
-      apply();
+      const newSystemTheme = mediaQuery.matches ? "dark" : "light";
+      const { theme } = get();
+      const resolved = computeResolvedTheme(theme, newSystemTheme);
+      applyTheme(resolved);
+      set({ systemTheme: newSystemTheme, resolvedTheme: resolved });
     };
     mediaQuery.addEventListener("change", handler);
     return () => mediaQuery.removeEventListener("change", handler);
