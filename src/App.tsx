@@ -35,9 +35,12 @@ function ProtectedRoute({ children }: { children: React.ReactElement }) {
   )
 }
 
+import { ThemeInitializer } from '@/components/ThemeInitializer';
+
 export default function App() {
   return (
     <Suspense fallback={<LoadingFallback />}>
+      <ThemeInitializer />
       <Routes>
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/login" element={<ProtectedRoute><Login /></ProtectedRoute>} />
