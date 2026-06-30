@@ -1,28 +1,27 @@
-import { Moon, Sun, Monitor } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { useThemeStore } from "@/stores/theme";
+import { useLocation } from "react-router";
 
 export default function ThemeToggle() {
-  const theme = useThemeStore((s) => s.theme);
-  const cycleTheme = useThemeStore((s) => s.cycleTheme);
+  const { resolvedTheme, setTheme } = useThemeStore();
+  const location = useLocation();
+  const isDashboard = location.pathname.startsWith("/dashboard") || location.pathname.startsWith("/admin");
 
-  const icon =
-    theme === "light" ? <Sun className="w-4 h-4" /> :
-    theme === "dark" ? <Moon className="w-4 h-4" /> :
-    <Monitor className="w-4 h-4" />;
+  if (!isDashboard) return null;
 
-  const label =
-    theme === "light" ? "Light" :
-    theme === "dark" ? "Dark" :
-    "System";
+  const toggle = () => {
+    const next = resolvedTheme === "dark" ? "light" : "dark";
+    setTheme(next);
+  };
 
   return (
     <button
-      onClick={cycleTheme}
-      title={`Theme: ${label} (click to change)`}
+      onClick={toggle}
+      title={`Switch to ${resolvedTheme === "dark" ? "Light" : "Dark"} mode`}
       className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[#2c3e2d] dark:text-[#e8f5e9] bg-white/60 dark:bg-[#1a2e2c] hover:bg-white dark:hover:bg-[#243d3a] border border-[#2c3e2d]/10 dark:border-white/10 transition-colors"
     >
-      {icon}
-      <span>{label}</span>
+      {resolvedTheme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+      <span>{resolvedTheme === "dark" ? "Light" : "Dark"}</span>
     </button>
   );
 }

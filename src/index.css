@@ -79,8 +79,7 @@
     position: relative;
   }
 
-  .dark body,
-  body.dark {
+  .dark body {
     background: linear-gradient(to bottom, #0d1f1c, #0a1413);
   }
 
@@ -100,12 +99,10 @@
 
 @layer utilities {
   .clay-card {
-    @apply rounded-3xl bg-white;
+    @apply rounded-3xl bg-[hsl(var(--card))];
     box-shadow: 0 4px 24px rgba(0, 105, 92, 0.08), 0 1px 4px rgba(0, 105, 92, 0.04);
   }
-  .dark .clay-card,
-  .clay-card.dark {
-    @apply bg-[hsl(var(--card))];
+  .dark .clay-card {
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2);
   }
   .clay-card-hover {
